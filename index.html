@@ -1,0 +1,2250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<title>SR FEEDS – Unified Edition v4.0</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+--g1:#0a3520;--g2:#0d4a2e;--g3:#1a6b42;--g4:#2d8a58;
+--gold:#c9a227;--gold2:#e8c44a;--gold3:#a07c14;--gold4:#fdf0c0;
+--bg:#f4f6f4;--card:#ffffff;--text:#111c11;--muted:#607060;
+--border:#d4e4d4;--radius:16px;--shadow:0 2px 12px rgba(10,53,32,.08);
+--accent:#e8f5ee;
+}
+[data-theme="dark"]{
+--bg:#0e1a0e;--card:#162216;--text:#e4ede4;--muted:#8aaa8a;
+--border:#1e3a1e;--accent:#122012;--shadow:0 2px 12px rgba(0,0,0,.3);
+}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:430px;margin:0 auto;overflow-x:hidden;font-size:14px;transition:background .3s,color .3s;}
+.sc-icon{font-size:13px;margin-bottom:2px;}
+.scard-lbl{font-size:10px;color:rgba(255,255,255,.5);margin-top:2px;font-weight:600;letter-spacing:.3px;}
+
+/* SPLASH */
+#splash{position:fixed;inset:0;background:var(--g1);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .7s ease;}
+.sr-logo{width:120px;height:120px;border-radius:50%;background:linear-gradient(145deg,var(--g2),var(--g3));border:3px solid var(--gold);display:flex;align-items:center;justify-content:center;animation:logoPulse 2s ease-in-out infinite;}
+.sr-logo svg{width:80px;height:80px;}
+@keyframes logoPulse{0%,100%{box-shadow:0 0 0 0 rgba(201,162,39,.3);}50%{box-shadow:0 0 0 20px rgba(201,162,39,.0);}}
+.splash-brand{margin-top:24px;text-align:center;}
+.splash-name{color:#fff;font-size:32px;font-weight:800;letter-spacing:2px;}
+.splash-name span{color:var(--gold);}
+.splash-tag{color:var(--gold2);font-size:12px;letter-spacing:4px;margin-top:6px;}
+.splash-bar{width:160px;height:2px;background:rgba(255,255,255,.15);border-radius:1px;margin-top:28px;overflow:hidden;}
+.splash-prog{height:100%;width:0;background:linear-gradient(90deg,var(--gold3),var(--gold2));border-radius:1px;animation:loadBar 2s ease forwards;}
+@keyframes loadBar{to{width:100%;}}
+.splash-version{color:rgba(255,255,255,.3);font-size:11px;margin-top:20px;letter-spacing:1px;}
+
+/* ONBOARDING */
+#onboarding{position:fixed;inset:0;background:var(--g1);z-index:9998;display:none;flex-direction:column;align-items:stretch;}
+.ob-bg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;text-align:center;}
+.ob-icon-wrap{width:100px;height:100px;border-radius:50%;background:rgba(201,162,39,.15);border:2px solid rgba(201,162,39,.4);display:flex;align-items:center;justify-content:center;margin:0 auto 28px;font-size:48px;}
+.ob-title{color:#fff;font-size:26px;font-weight:700;margin-bottom:12px;line-height:1.3;}
+.ob-desc{color:rgba(255,255,255,.65);font-size:15px;line-height:1.7;max-width:300px;margin:0 auto;}
+.ob-bottom{padding:0 24px 48px;}
+.ob-dots{display:flex;gap:8px;justify-content:center;margin-bottom:28px;}
+.ob-dot{height:6px;border-radius:3px;background:rgba(255,255,255,.25);transition:.3s;}
+.ob-dot.active{width:28px;background:var(--gold);}
+.ob-dot:not(.active){width:6px;}
+.ob-actions{display:flex;gap:12px;}
+.btn-skip{flex:0 0 auto;padding:14px 22px;border-radius:50px;border:1px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.6);font-size:14px;cursor:pointer;}
+.btn-next{flex:1;padding:14px;border-radius:50px;border:none;background:linear-gradient(135deg,var(--gold3),var(--gold));color:#fff;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:.5px;}
+
+/* MAIN */
+#app{display:none;flex-direction:column;min-height:100vh;padding-bottom:72px;}
+.screen{display:none;flex-direction:column;}
+.screen.active{display:flex;}
+
+/* TOPBAR */
+.topbar{background:var(--g1);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.tb-logo{display:flex;align-items:center;gap:10px;}
+.tb-ring{width:38px;height:38px;border-radius:50%;background:var(--g2);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;}
+.tb-ring svg{width:24px;height:24px;}
+.tb-text{line-height:1;}
+.tb-name{color:#fff;font-size:16px;font-weight:800;letter-spacing:1px;}
+.tb-tag{color:var(--gold2);font-size:9px;letter-spacing:3px;}
+.tb-actions{display:flex;gap:6px;}
+.tb-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;}
+.tb-badge{position:absolute;top:4px;right:4px;width:8px;height:8px;background:#ff5252;border-radius:50%;border:1.5px solid var(--g1);}
+
+/* BOTTOM NAV */
+.bottomnav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:var(--g1);border-top:1px solid rgba(201,162,39,.2);display:flex;z-index:200;padding-bottom:env(safe-area-inset-bottom,0);}
+.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px 8px;cursor:pointer;border:none;background:none;gap:4px;}
+.bn-icon{font-size:20px;color:rgba(255,255,255,.35);transition:.2s;}
+.bn-label{font-size:9px;color:rgba(255,255,255,.35);font-weight:600;letter-spacing:.5px;text-transform:uppercase;transition:.2s;}
+.bn-item.active .bn-icon,.bn-item.active .bn-label{color:var(--gold2);}
+.bn-item.active::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:32px;height:2px;background:var(--gold);border-radius:0 0 2px 2px;}
+
+/* HOME */
+.hero{background:linear-gradient(160deg,var(--g1) 0%,var(--g2) 60%,var(--g3) 100%);padding:20px 16px 24px;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;right:-30px;top:-30px;width:180px;height:180px;border-radius:50%;background:rgba(201,162,39,.06);border:1px solid rgba(201,162,39,.1);}
+.hero-greeting{color:rgba(255,255,255,.6);font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.hero-title{color:#fff;font-size:22px;font-weight:700;margin-bottom:2px;}
+.hero-sub{color:var(--gold2);font-size:13px;font-weight:500;}
+.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px;}
+.hstat{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 6px;text-align:center;}
+.hstat-num{color:var(--gold2);font-size:18px;font-weight:700;}
+.hstat-label{color:rgba(255,255,255,.5);font-size:10px;margin-top:1px;}
+.weather-card{margin:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow);}
+.wc-icon{font-size:36px;line-height:1;}
+.wc-info{flex:1;}
+.wc-temp{font-size:24px;font-weight:700;color:var(--g1);}
+.wc-desc{font-size:12px;color:var(--muted);margin-top:1px;}
+.wc-sub{font-size:11px;color:var(--g3);font-weight:600;margin-top:3px;}
+.wc-refresh{font-size:11px;color:var(--gold3);background:none;border:none;cursor:pointer;font-weight:600;}
+.alert-card{margin:0 16px 4px;background:linear-gradient(135deg,#fff8e6,#fef3cc);border:1px solid #f0d060;border-radius:12px;padding:10px 14px;font-size:12px;color:#6b4c00;display:flex;align-items:center;gap:8px;}
+.sec{padding:16px 16px 4px;}
+.sec-hd{font-size:13px;font-weight:700;color:var(--g1);letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.sec-hd::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent);}
+.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 16px;}
+.qcard{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 12px 12px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow);}
+.qcard:active{transform:scale(.97);background:var(--accent);}
+.qcard-top{display:flex;align-items:center;justify-content:space-between;}
+.qcard-icon{font-size:28px;line-height:1;}
+.qcard-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px;background:var(--accent);color:var(--g2);border:1px solid rgba(13,74,46,.1);}
+.qcard-label{font-size:13px;font-weight:700;color:var(--g1);}
+.qcard-sub{font-size:11px;color:var(--muted);}
+.qcard-arr{font-size:10px;color:var(--gold3);font-weight:700;align-self:flex-end;}
+.tip-card{margin:0 16px 16px;background:linear-gradient(135deg,var(--accent),var(--card));border:1px solid rgba(13,74,46,.15);border-radius:var(--radius);padding:14px 16px;display:flex;gap:12px;}
+.tip-ic{font-size:22px;flex-shrink:0;margin-top:2px;}
+.tip-lbl{font-size:10px;font-weight:700;color:var(--gold3);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.tip-txt{font-size:13px;color:var(--g1);line-height:1.6;}
+.feat-prod{margin:0 16px 24px;background:var(--g1);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden;}
+.fp-top{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.fp-bag{width:48px;height:56px;background:rgba(255,255,255,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid rgba(201,162,39,.2);}
+.fp-info{flex:1;}
+.fp-name{color:#fff;font-size:14px;font-weight:700;}
+.fp-type{color:var(--gold2);font-size:11px;margin-top:2px;}
+.fp-badge{display:inline-block;background:var(--gold);color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;margin-top:4px;letter-spacing:.5px;}
+.fp-specs{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.fp-spec{background:rgba(255,255,255,.07);border-radius:8px;padding:6px 8px;}
+.fp-spec-lbl{font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;}
+.fp-spec-val{font-size:13px;font-weight:700;color:var(--gold2);margin-top:1px;}
+
+/* LEARN */
+.learn-hd{background:linear-gradient(160deg,var(--g1),var(--g2));padding:20px 16px;}
+.learn-hd-title{color:#fff;font-size:20px;font-weight:700;}
+.learn-hd-sub{color:var(--gold2);font-size:12px;margin-top:4px;}
+.tabs{display:flex;gap:8px;padding:14px 16px 2px;overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{padding:8px 16px;border-radius:50px;border:1.5px solid var(--border);background:var(--card);font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;transition:.2s;letter-spacing:.3px;}
+.tab.active{background:var(--g1);color:#fff;border-color:var(--g1);}
+.learn-body{padding:12px 16px 16px;}
+.lcard{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);}
+.lcard-hd{background:var(--g2);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+.lcard-title{color:#fff;font-size:13px;font-weight:700;}
+.lcard-chip{background:rgba(201,162,39,.3);color:var(--gold2);font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;border:1px solid rgba(201,162,39,.2);}
+.lcard-body{padding:14px 16px;}
+.lcard-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bg);}
+.lcard-row:last-of-type{border-bottom:none;}
+.lcard-key{font-size:12px;color:var(--muted);}
+.lcard-val{font-size:12px;font-weight:700;color:var(--g1);}
+.lcard-benefit{background:var(--accent);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--g2);line-height:1.5;margin-top:10px;border-left:3px solid var(--g3);}
+.lcard-marketing{background:var(--gold4);border-radius:8px;padding:8px 10px;font-size:12px;color:#6b4c00;line-height:1.5;margin-top:8px;}
+.marketing-lbl{font-size:10px;font-weight:700;color:var(--gold3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px;}
+.phase-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--bg);}
+.phase-num{width:26px;height:26px;border-radius:50%;background:var(--g2);color:var(--gold2);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
+.phase-nm{font-size:13px;font-weight:700;color:var(--g1);}
+.phase-age{font-size:11px;color:var(--muted);}
+.phase-goal{font-size:11px;color:var(--g3);font-weight:600;margin-top:2px;}
+.phase-cp{font-size:11px;color:var(--gold3);font-weight:700;}
+.nut-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px;}
+.nut-table th{background:var(--g1);color:var(--gold2);padding:6px 8px;text-align:left;font-weight:700;font-size:10px;letter-spacing:.3px;}
+.nut-table td{padding:6px 8px;border-bottom:1px solid var(--bg);color:var(--text);}
+.nut-table tr:nth-child(even) td{background:var(--accent);}
+
+/* TOOLS SCREEN */
+.tools-hd{background:linear-gradient(160deg,var(--g1),var(--g2));padding:20px 16px;}
+.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px;}
+.tcard{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 14px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow);position:relative;}
+.tcard:active{transform:scale(.97);background:var(--accent);}
+.tcard-icon{font-size:32px;margin-bottom:8px;}
+.tcard-title{font-size:13px;font-weight:700;color:var(--g1);margin-bottom:2px;}
+.tcard-desc{font-size:11px;color:var(--muted);line-height:1.4;}
+.tcard-badge{position:absolute;top:10px;right:10px;background:var(--g3);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;}
+
+/* TRACKER */
+.tracker-hd{background:linear-gradient(160deg,var(--g1),var(--g2));padding:20px 16px;}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:16px;}
+.scard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;box-shadow:var(--shadow);}
+.scard-num{font-size:20px;font-weight:700;color:var(--g1);}
+.scard-lbl{font-size:10px;color:var(--muted);margin-top:2px;font-weight:600;}
+.ttabs{display:flex;gap:6px;padding:0 16px 12px;overflow-x:auto;scrollbar-width:none;}
+.ttabs::-webkit-scrollbar{display:none;}
+.ttab{padding:7px 14px;border-radius:50px;border:1.5px solid var(--border);background:var(--card);font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;}
+.ttab.active{background:var(--g1);color:#fff;border-color:var(--g1);}
+.add-btn{margin:0 16px 14px;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--g2);color:#fff;border:none;padding:14px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;width:calc(100% - 32px);}
+.rec-list{padding:0 16px;}
+.rec-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);}
+.rec-ic{font-size:22px;}
+.rec-inf{flex:1;}
+.rec-title{font-size:13px;font-weight:700;color:var(--g1);}
+.rec-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+.rec-val{font-size:14px;font-weight:700;color:var(--g3);}
+
+/* PROFILE */
+.prof-hd{background:linear-gradient(160deg,var(--g1),var(--g2));padding:28px 16px 24px;text-align:center;}
+.prof-av{width:76px;height:76px;border-radius:50%;background:rgba(201,162,39,.2);border:3px solid var(--gold);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:32px;}
+.prof-name{color:#fff;font-size:18px;font-weight:700;}
+.prof-type{color:var(--gold2);font-size:12px;margin-top:4px;}
+.prof-stats{display:flex;gap:24px;justify-content:center;margin-top:16px;}
+.pst{text-align:center;}
+.pst-num{color:#fff;font-size:20px;font-weight:700;}
+.pst-lbl{color:rgba(255,255,255,.5);font-size:10px;margin-top:1px;}
+.sl-grp{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin:0 16px 12px;overflow:hidden;box-shadow:var(--shadow);}
+.sl-item{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--bg);cursor:pointer;}
+.sl-item:last-child{border-bottom:none;}
+.sl-icon{font-size:18px;width:28px;text-align:center;}
+.sl-txt{flex:1;}
+.sl-lbl{font-size:13px;font-weight:600;color:var(--text);}
+.sl-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+.sl-arr{color:var(--border);font-size:16px;}
+.sl-tog{width:42px;height:24px;border-radius:12px;background:var(--border);border:none;cursor:pointer;position:relative;transition:.2s;flex-shrink:0;}
+.sl-tog.on{background:var(--g3);}
+.sl-tog::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.sl-tog.on::after{left:21px;}
+
+/* MODALS */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:none;align-items:flex-end;backdrop-filter:blur(2px);}
+.overlay.open{display:flex;}
+.sheet{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-height:90vh;overflow-y:auto;padding:20px 20px 40px;position:relative;}
+.sheet-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 18px;}
+.sheet-title{font-size:17px;font-weight:700;color:var(--g1);margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+.sheet-close{position:absolute;top:20px;right:20px;width:30px;height:30px;border-radius:50%;background:var(--bg);border:1px solid var(--border);color:var(--muted);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+/* FORMS */
+.frow{margin-bottom:14px;}
+.flabel{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;display:block;}
+.finput,.fselect{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;color:var(--text);background:var(--bg);outline:none;appearance:none;-webkit-appearance:none;}
+.finput:focus,.fselect:focus{border-color:var(--g3);}
+.fcalc-btn{width:100%;background:var(--g2);color:#fff;border:none;padding:14px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px;letter-spacing:.5px;}
+.fcalc-btn:active{background:var(--g1);}
+.frow-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+
+/* CALC RESULTS */
+.calc-res{background:var(--g1);border-radius:14px;padding:16px;margin-top:14px;display:none;}
+.cr-main-lbl{font-size:10px;font-weight:700;color:var(--gold2);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.cr-main-val{font-size:28px;font-weight:700;color:#fff;margin-bottom:6px;}
+.cr-detail{font-size:12px;color:rgba(255,255,255,.6);line-height:1.7;white-space:pre-line;}
+.cr-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+.cr-spec{background:rgba(255,255,255,.08);border-radius:8px;padding:8px 10px;}
+.cr-spec-lbl{font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.3px;}
+.cr-spec-val{font-size:13px;font-weight:700;color:var(--gold2);margin-top:2px;}
+.calc-history{margin-top:14px;}
+.calc-hist-title{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;}
+.calc-hist-item{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;}
+.chi-lbl{font-size:12px;color:var(--text);font-weight:600;}
+.chi-val{font-size:12px;color:var(--g3);font-weight:700;}
+.chi-del{background:none;border:none;color:#e55;font-size:14px;cursor:pointer;padding:4px;}
+
+/* PROFIT RESULTS */
+.profit-res{background:linear-gradient(135deg,var(--g1),var(--g2));border-radius:14px;padding:18px;margin-top:14px;display:none;}
+.pr-main{font-size:36px;font-weight:700;color:var(--gold2);}
+.pr-lbl{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px;}
+.pr-breakdown{margin-top:14px;display:grid;gap:6px;}
+.pr-row{background:rgba(255,255,255,.08);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;font-size:12px;}
+.pr-row-lbl{color:rgba(255,255,255,.6);}
+.pr-row-val{color:#fff;font-weight:700;}
+.pr-row-val.pos{color:#6ddb9a;}
+.pr-row-val.neg{color:#ff8080;}
+.pr-be{background:rgba(201,162,39,.15);border:1px solid rgba(201,162,39,.3);border-radius:8px;padding:10px 12px;margin-top:8px;font-size:12px;color:var(--gold2);}
+
+/* DISEASE */
+.dis-cat-row{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px;padding-bottom:2px;}
+.dis-cat-row::-webkit-scrollbar{display:none;}
+.dis-cat-btn{padding:6px 14px;border-radius:50px;border:1.5px solid var(--border);background:var(--card);font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;}
+.dis-cat-btn.active{background:var(--g1);color:#fff;border-color:var(--g1);}
+.dis-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow);}
+.dis-hd{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;}
+.dis-name{color:#fff;font-size:13px;font-weight:700;}
+.dis-sp{background:rgba(255,255,255,.15);color:#fff;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;}
+.dis-body{padding:12px 14px;}
+.dis-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+.dis-chip{background:var(--bg);border-radius:8px;padding:7px 10px;font-size:11px;color:var(--text);flex:1;min-width:120px;}
+.dis-chip b{display:block;font-size:10px;color:var(--gold3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;}
+.dis-resp{background:var(--accent);border-left:3px solid var(--g3);border-radius:0 8px 8px 0;padding:7px 10px;font-size:11px;color:var(--g1);line-height:1.5;}
+.sev-critical{background:#b91c1c;}
+.sev-high{background:#c2410c;}
+.sev-medium{background:#0f766e;}
+.disclaimer{background:#fff8e6;border:1px solid #f0d060;border-radius:10px;padding:10px 12px;font-size:11px;color:#6b4c00;margin-top:8px;line-height:1.5;}
+
+/* WIZARD */
+.wz-step{animation:fadeUp .3s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.wz-title{font-size:17px;font-weight:700;color:var(--g1);margin-bottom:4px;}
+.wz-sub{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5;}
+.wz-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.wz-opt{background:var(--bg);border:2px solid var(--border);border-radius:14px;padding:16px 12px;text-align:center;cursor:pointer;transition:all .15s;}
+.wz-opt.sel,.wz-opt:active{border-color:var(--g3);background:var(--accent);}
+.wz-opt-ic{font-size:32px;margin-bottom:8px;}
+.wz-opt-lbl{font-size:12px;font-weight:700;color:var(--g1);}
+.wz-result{background:var(--g1);border-radius:14px;padding:18px;animation:fadeUp .3s ease;}
+.wz-res-chip{display:inline-block;background:rgba(201,162,39,.2);color:var(--gold2);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid rgba(201,162,39,.3);margin-bottom:12px;letter-spacing:.5px;}
+.wz-rec-name{color:#fff;font-size:16px;font-weight:700;margin-bottom:6px;}
+.wz-rec-spec{color:rgba(255,255,255,.65);font-size:12px;line-height:1.6;margin-bottom:14px;}
+.wz-res-row{display:flex;justify-content:space-between;background:rgba(255,255,255,.08);border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:6px;}
+.wz-res-k{color:rgba(255,255,255,.5);}
+.wz-res-v{color:var(--gold2);font-weight:700;}
+.wz-restart{width:100%;margin-top:12px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.8);padding:12px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;}
+.wz-progress{display:flex;gap:6px;margin-bottom:18px;}
+.wz-prog-dot{height:4px;flex:1;border-radius:2px;background:var(--border);transition:.3s;}
+.wz-prog-dot.done{background:var(--g3);}
+.wz-prog-dot.active{background:var(--gold);}
+
+/* VACCINE PLANNER */
+.vac-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);transition:.2s;}
+.vac-item.done{opacity:.65;background:var(--accent);}
+.vac-num{width:32px;height:32px;border-radius:50%;background:var(--g2);color:var(--gold2);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.vac-num.done-num{background:var(--g3);color:#fff;}
+.vac-info{flex:1;}
+.vac-name{font-size:13px;font-weight:700;color:var(--g1);}
+.vac-day{font-size:11px;color:var(--muted);margin-top:2px;}
+.vac-route{font-size:10px;font-weight:600;color:var(--g3);margin-top:3px;background:var(--accent);display:inline-block;padding:2px 7px;border-radius:10px;}
+.vac-check{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;transition:.2s;}
+.vac-check.done-check{background:var(--g3);border-color:var(--g3);color:#fff;}
+.vac-reminder-btn{font-size:10px;background:var(--gold4);border:1px solid var(--gold3);color:var(--gold3);padding:3px 8px;border-radius:10px;cursor:pointer;margin-top:4px;display:inline-block;font-weight:700;}
+
+/* CATALOG */
+.cat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);}
+.cat-hd{background:var(--g1);padding:14px 16px;display:flex;gap:12px;align-items:center;}
+.cat-bag{width:44px;height:52px;background:rgba(255,255,255,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid rgba(201,162,39,.2);}
+.cat-info{flex:1;}
+.cat-nm{color:#fff;font-size:14px;font-weight:700;}
+.cat-type{color:var(--gold2);font-size:11px;margin-top:2px;}
+.cat-body{padding:12px 16px;}
+.cat-specs{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.cat-sp{background:var(--bg);border-radius:8px;padding:6px 8px;}
+.cat-sp-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;}
+.cat-sp-val{font-size:13px;font-weight:700;color:var(--g1);margin-top:1px;}
+
+/* DEALER */
+.dealer-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow);}
+.dealer-nm{font-size:13px;font-weight:700;color:var(--g1);}
+.dealer-loc{font-size:11px;color:var(--muted);margin-top:2px;}
+.dealer-type{font-size:10px;font-weight:700;color:var(--g3);margin-top:4px;background:var(--accent);display:inline-block;padding:2px 8px;border-radius:10px;}
+.dealer-phone{font-size:13px;font-weight:700;color:var(--g2);margin-top:4px;}
+
+/* NOTIF CENTER */
+.notif-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;gap:12px;box-shadow:var(--shadow);}
+.notif-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.notif-dot.unread{background:var(--g3);}
+.notif-dot.read{background:var(--border);}
+.notif-body{flex:1;}
+.notif-title{font-size:13px;font-weight:700;color:var(--g1);}
+.notif-msg{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.5;}
+.notif-time{font-size:10px;color:var(--gold3);margin-top:4px;font-weight:600;}
+
+/* FAQ */
+.faq-item{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;overflow:hidden;box-shadow:var(--shadow);}
+.faq-q{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+.faq-qtxt{font-size:13px;font-weight:600;color:var(--g1);flex:1;line-height:1.4;}
+.faq-ic{font-size:16px;color:var(--muted);transition:.2s;margin-left:8px;flex-shrink:0;}
+.faq-a{display:none;padding:0 16px 14px;font-size:12px;color:var(--muted);line-height:1.7;border-top:1px solid var(--bg);white-space:pre-line;}
+
+/* CONTACT */
+.contact-btn{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;border:1px solid var(--border);cursor:pointer;margin-bottom:10px;background:var(--bg);transition:.15s;}
+.contact-btn:active{background:var(--accent);}
+.cb-ic{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.cb-green{background:#e8f5ee;}
+.cb-blue{background:#e8eef8;}
+.cb-gold{background:var(--gold4);}
+.cb-lbl{font-size:14px;font-weight:700;color:var(--g1);}
+.cb-val{font-size:12px;color:var(--muted);margin-top:1px;}
+
+/* SEARCH */
+.search-wrap{margin:0 0 14px;display:flex;align-items:center;gap:10px;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:10px 13px;}
+.search-ic{font-size:16px;color:var(--muted);}
+.search-inp{border:none;background:none;font-size:14px;color:var(--text);flex:1;outline:none;}
+.search-result-item{padding:12px 4px;border-bottom:1px solid var(--bg);cursor:pointer;display:flex;justify-content:space-between;align-items:center;}
+.search-result-item:active{background:var(--accent);}
+.sri-lbl{font-size:13px;font-weight:600;color:var(--g1);}
+.sri-cat{font-size:10px;font-weight:700;color:var(--gold3);background:var(--gold4);padding:2px 8px;border-radius:10px;}
+
+/* MISC */
+.empty-state{text-align:center;padding:40px 20px;}
+.empty-ic{font-size:48px;margin-bottom:12px;}
+.empty-txt{font-size:14px;color:var(--muted);}
+.fade-in{animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+.tag-green{background:var(--g3);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;display:inline-block;}
+.tag-gold{background:var(--gold);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;display:inline-block;}
+.section-divider{padding:14px 0 6px;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="sr-logo">
+    <svg viewBox="0 0 80 80" fill="none"><circle cx="40" cy="40" r="38" stroke="#c9a227" stroke-width="2"/><text x="40" y="52" text-anchor="middle" font-family="Segoe UI,sans-serif" font-weight="900" font-size="28" fill="#c9a227">SR</text><path d="M20 60 Q40 72 60 60" stroke="#c9a227" stroke-width="1.5" fill="none" opacity=".5"/><path d="M15 28 Q40 12 65 28" stroke="#c9a227" stroke-width="1.5" fill="none" opacity=".5"/></svg>
+  </div>
+  <div class="splash-brand">
+    <div class="splash-name">SR <span>FEEDS</span></div>
+    <div class="splash-tag">SCIENCE • NUTRITION • GROWTH</div>
+  </div>
+  <div class="splash-bar"><div class="splash-prog"></div></div>
+  <div class="splash-version">VERSION 4.0 • UNIFIED EDITION</div>
+</div>
+
+<!-- ONBOARDING -->
+<div id="onboarding">
+  <div class="ob-bg" id="ob-content"></div>
+  <div class="ob-bottom">
+    <div class="ob-dots" id="ob-dots"></div>
+    <div class="ob-actions">
+      <button class="btn-skip" onclick="startApp()">Skip</button>
+      <button class="btn-next" id="ob-next" onclick="nextSlide()">Next →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="tb-logo">
+      <div class="tb-ring">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" stroke="#c9a227" stroke-width="1.5"/><text x="12" y="16" text-anchor="middle" font-family="Segoe UI,sans-serif" font-weight="900" font-size="9" fill="#c9a227">SR</text></svg>
+      </div>
+      <div class="tb-text">
+        <div class="tb-name">SR FEEDS</div>
+        <div class="tb-tag">SCIENCE • NUTRITION • GROWTH</div>
+      </div>
+    </div>
+    <div class="tb-actions">
+      <button class="tb-btn" onclick="openModal('notif-modal')" title="Notifications"><span>🔔</span><span class="tb-badge" id="notif-badge" style="display:none;"></span></button>
+      <button class="tb-btn" onclick="openSearchModal()" title="Search">🔍</button>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div class="screen active" id="scr-home">
+    <div class="hero">
+      <div class="hero-greeting" id="home-greeting">Welcome, Farmer 👋</div>
+      <div class="hero-title">Science Meets Farming</div>
+      <div class="hero-sub">Premium nutrition for healthier livestock & better profits</div>
+      <div class="hero-stats">
+        <div class="hstat"><div class="hstat-num">4</div><div class="hstat-label">Species</div></div>
+        <div class="hstat"><div class="hstat-num">23+</div><div class="hstat-label">Feed Stages</div></div>
+        <div class="hstat"><div class="hstat-num">100%</div><div class="hstat-label">Offline</div></div>
+      </div>
+    </div>
+    <div class="weather-card" id="weather-card">
+      <div class="wc-icon" id="wc-icon">⛅</div>
+      <div class="wc-info">
+        <div class="wc-temp" id="wc-temp">-- °C</div>
+        <div class="wc-desc" id="wc-desc">Fetching weather...</div>
+        <div class="wc-sub" id="wc-sub">Kalaburagi, Karnataka</div>
+      </div>
+      <button class="wc-refresh" onclick="fetchWeather()">⟳ Refresh</button>
+    </div>
+    <div class="alert-card" id="heat-alert" style="display:none;">⚠️ <strong>Heat Alert:</strong> Temperature above 35°C — increase water intake & ventilation.</div>
+    <div class="sec"><div class="sec-hd">Quick Access</div></div>
+    <div class="qgrid">
+      <div class="qcard" onclick="goLearn('broiler')"><div class="qcard-top"><div class="qcard-icon">🐓</div><div class="qcard-badge">4 stages</div></div><div class="qcard-label">Broiler Guide</div><div class="qcard-sub">Pre-starter to finisher</div><div class="qcard-arr">Explore →</div></div>
+      <div class="qcard" onclick="goLearn('layer')"><div class="qcard-top"><div class="qcard-icon">🥚</div><div class="qcard-badge">8 phases</div></div><div class="qcard-label">Layer Program</div><div class="qcard-sub">Full lifecycle</div><div class="qcard-arr">Explore →</div></div>
+      <div class="qcard" onclick="openModal('calc-modal')"><div class="qcard-top"><div class="qcard-icon">🧮</div><div class="qcard-badge">Offline</div></div><div class="qcard-label">Feed Calculator</div><div class="qcard-sub">Daily requirements</div><div class="qcard-arr">Calculate →</div></div>
+      <div class="qcard" onclick="openModal('profit-modal')"><div class="qcard-top"><div class="qcard-icon">📈</div><div class="qcard-badge">ROI</div></div><div class="qcard-label">Profit Estimator</div><div class="qcard-sub">Break-even analysis</div><div class="qcard-arr">Estimate →</div></div>
+      <div class="qcard" onclick="openModal('disease-modal')"><div class="qcard-top"><div class="qcard-icon">🩺</div><div class="qcard-badge">15 diseases</div></div><div class="qcard-label">Disease Guide</div><div class="qcard-sub">Symptoms & care</div><div class="qcard-arr">Check →</div></div>
+      <div class="qcard" onclick="openModal('wizard-modal')"><div class="qcard-top"><div class="qcard-icon">✨</div><div class="qcard-badge">Smart</div></div><div class="qcard-label">Feed Wizard</div><div class="qcard-sub">Get recommendation</div><div class="qcard-arr">Start →</div></div>
+      <div class="qcard" onclick="openModal('vaccine-modal')"><div class="qcard-top"><div class="qcard-icon">💉</div><div class="qcard-badge">Planner</div></div><div class="qcard-label">Vaccination</div><div class="qcard-sub">Schedule & reminders</div><div class="qcard-arr">Plan →</div></div>
+      <div class="qcard" onclick="openModal('catalog-modal')"><div class="qcard-top"><div class="qcard-icon">📦</div><div class="qcard-badge">13 products</div></div><div class="qcard-label">Product Catalog</div><div class="qcard-sub">Full spec sheets</div><div class="qcard-arr">Browse →</div></div>
+    </div>
+    <div class="sec"><div class="sec-hd">Today's Tip</div></div>
+    <div class="tip-card" style="margin-bottom:16px;">
+      <div class="tip-ic">💡</div>
+      <div><div class="tip-lbl">Farmer Tip</div><div class="tip-txt" id="daily-tip">Loading...</div></div>
+    </div>
+    <div class="sec"><div class="sec-hd">Featured Product</div></div>
+    <div class="feat-prod" style="margin-bottom:24px;">
+      <div class="fp-top">
+        <div class="fp-bag">🐓</div>
+        <div class="fp-info">
+          <div class="fp-name">BPS – Broiler Pre-Starter</div>
+          <div class="fp-type">Crumble Form • Day 1–10</div>
+          <div class="fp-badge">BEST SELLER</div>
+        </div>
+      </div>
+      <div class="fp-specs">
+        <div class="fp-spec"><div class="fp-spec-lbl">Crude Protein</div><div class="fp-spec-val">21–23%</div></div>
+        <div class="fp-spec"><div class="fp-spec-lbl">ME (kcal/kg)</div><div class="fp-spec-val">2850–2950</div></div>
+        <div class="fp-spec"><div class="fp-spec-lbl">Lysine</div><div class="fp-spec-val">1.2%</div></div>
+        <div class="fp-spec"><div class="fp-spec-lbl">Methionine</div><div class="fp-spec-val">0.55%</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEARN -->
+  <div class="screen" id="scr-learn">
+    <!-- ACADEMY LIST VIEW -->
+    <div id="academy-view">
+      <div class="learn-hd">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
+          <div><div class="learn-hd-title">📚 Learning Academy</div><div class="learn-hd-sub">Interactive lessons, quizzes & badges</div></div>
+          <div style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:5px 12px;text-align:center;">
+            <div style="color:var(--gold2);font-size:16px;font-weight:800;" id="total-pct">0%</div>
+            <div style="color:rgba(255,255,255,.5);font-size:9px;letter-spacing:.5px;">DONE</div>
+          </div>
+        </div>
+        <div class="cat-tabs" id="cat-tabs" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:8px;">
+          <div class="cat-tab active" onclick="setAcademyCat('broiler',this)" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:50px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);font-size:12px;font-weight:700;color:rgba(255,255,255,.6);cursor:pointer;white-space:nowrap;flex-shrink:0;">🐓 Broiler</div>
+          <div class="cat-tab" onclick="setAcademyCat('layer',this)" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:50px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);font-size:12px;font-weight:700;color:rgba(255,255,255,.6);cursor:pointer;white-space:nowrap;flex-shrink:0;">🥚 Layer</div>
+          <div class="cat-tab" onclick="setAcademyCat('dairy',this)" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:50px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);font-size:12px;font-weight:700;color:rgba(255,255,255,.6);cursor:pointer;white-space:nowrap;flex-shrink:0;">🐄 Dairy</div>
+          <div class="cat-tab" onclick="setAcademyCat('goat',this)" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:50px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);font-size:12px;font-weight:700;color:rgba(255,255,255,.6);cursor:pointer;white-space:nowrap;flex-shrink:0;">🐐 Goat</div>
+          <div class="cat-tab" onclick="setAcademyCat('all',this)" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:50px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);font-size:12px;font-weight:700;color:rgba(255,255,255,.6);cursor:pointer;white-space:nowrap;flex-shrink:0;">📊 All</div>
+          <div class="cat-tab" onclick="switchToLearnFaq()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:50px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);font-size:12px;font-weight:700;color:rgba(255,255,255,.6);cursor:pointer;white-space:nowrap;flex-shrink:0;">❓ FAQ</div>
+        </div>
+        <div style="background:rgba(0,0,0,.2);height:3px;margin:0 0 0;"><div style="height:100%;background:linear-gradient(90deg,var(--gold3),var(--gold2));border-radius:2px;transition:width .5s ease;" id="progress-fill"></div></div>
+      </div>
+      <div class="learn-body" id="academy-body" style="padding:16px;"></div>
+    </div>
+    <!-- LESSON VIEW -->
+    <div id="lesson-view" style="display:none;flex-direction:column;flex:1;">
+      <div style="background:linear-gradient(160deg,var(--g1),var(--g2));padding:14px 16px;">
+        <button onclick="closeLessonView()" style="display:flex;align-items:center;gap:8px;background:none;border:none;color:rgba(255,255,255,.8);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:12px;"><span style="font-size:18px;">‹</span> Academy</button>
+        <div style="color:#fff;font-size:17px;font-weight:800;line-height:1.3;" id="lv-title">Lesson</div>
+        <div style="color:var(--gold2);font-size:11px;margin-top:4px;" id="lv-sub">Category</div>
+        <div style="display:flex;gap:4px;margin-top:12px;" id="lv-progress"></div>
+      </div>
+      <div style="padding:16px;flex:1;overflow-y:auto;" id="lv-body"></div>
+      <div style="display:flex;gap:10px;padding:16px;padding-top:0;">
+        <button id="lv-prev" onclick="lessonNav(-1)" style="flex:1;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--bg);color:var(--muted);">‹ Prev</button>
+        <button id="lv-next" onclick="lessonNav(1)" style="flex:1;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:none;background:var(--g2);color:#fff;">Next ›</button>
+      </div>
+    </div>
+    <!-- QUIZ VIEW -->
+    <div id="quiz-view" style="display:none;flex-direction:column;flex:1;">
+      <div style="background:linear-gradient(160deg,var(--g1),var(--g2));padding:14px 16px;">
+        <button onclick="closeQuizView()" style="display:flex;align-items:center;gap:8px;background:none;border:none;color:rgba(255,255,255,.8);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:12px;"><span style="font-size:18px;">‹</span> Lesson</button>
+        <div style="color:var(--gold2);font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:6px;" id="quiz-q-num">Question 1 of 5</div>
+        <div style="color:#fff;font-size:16px;font-weight:700;line-height:1.4;" id="quiz-q-txt"></div>
+        <div style="display:flex;gap:4px;margin-top:12px;" id="quiz-prog"></div>
+      </div>
+      <div style="padding:16px;flex:1;" id="quiz-body"></div>
+      <div style="padding:0 16px 16px;display:none;" id="quiz-result"></div>
+    </div>
+    <!-- FAQ VIEW (replaces old setLearnTab faq) -->
+    <div id="faq-view" style="display:none;flex-direction:column;flex:1;">
+      <div style="background:linear-gradient(160deg,var(--g1),var(--g2));padding:14px 16px;">
+        <button onclick="closeFaqView()" style="display:flex;align-items:center;gap:8px;background:none;border:none;color:rgba(255,255,255,.8);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:12px;"><span style="font-size:18px;">‹</span> Academy</button>
+        <div style="color:#fff;font-size:17px;font-weight:800;">❓ Frequently Asked Questions</div>
+      </div>
+      <div style="padding:16px;" id="faq-body"></div>
+    </div>
+  </div>
+
+  <!-- TOOLS -->
+  <div class="screen" id="scr-tools">
+    <div class="tools-hd"><div class="learn-hd-title">🛠 Farmer Tools</div><div class="learn-hd-sub">Offline calculators, guides & smart resources</div></div>
+    <div class="tgrid">
+      <div class="tcard" onclick="openModal('calc-modal')"><div class="tcard-icon">🧮</div><div class="tcard-title">Feed Calculator</div><div class="tcard-desc">Daily, weekly & monthly requirements with cost</div></div>
+      <div class="tcard" onclick="openModal('profit-modal')"><div class="tcard-icon">📈</div><div class="tcard-title">Profit Estimator</div><div class="tcard-desc">Full ROI, break-even & profitability analysis</div></div>
+      <div class="tcard" onclick="openModal('wizard-modal')"><div class="tcard-icon">✨</div><div class="tcard-title">Feed Wizard</div><div class="tcard-desc">Smart step-by-step feed recommendation</div></div>
+      <div class="tcard" onclick="openModal('vaccine-modal')"><div class="tcard-icon">💉</div><div class="tcard-title">Vaccination Planner</div><div class="tcard-desc">Schedules, tracking & reminders</div><div class="tcard-badge" id="vac-badge" style="display:none;">New</div></div>
+      <div class="tcard" onclick="openModal('disease-modal')"><div class="tcard-icon">🩺</div><div class="tcard-title">Disease Guide</div><div class="tcard-desc">15 diseases – symptoms, causes & response</div></div>
+      <div class="tcard" onclick="openModal('catalog-modal')"><div class="tcard-icon">📦</div><div class="tcard-title">Product Catalog</div><div class="tcard-desc">All SR FEEDS products with full specs</div></div>
+      <div class="tcard" onclick="openModal('dealer-modal')"><div class="tcard-icon">📍</div><div class="tcard-title">Dealer Locator</div><div class="tcard-desc">Find nearest authorized dealers</div></div>
+      <div class="tcard" onclick="openModal('contact-modal')"><div class="tcard-icon">☎️</div><div class="tcard-title">Contact SR Feeds</div><div class="tcard-desc">Call, WhatsApp, email or visit us</div></div>
+    </div>
+  </div>
+
+  <!-- TRACKER -->
+  <div class="screen" id="scr-tracker">
+    <div class="tracker-hd"><div class="learn-hd-title">📋 Farm Record Book</div><div class="learn-hd-sub">10-category tracker • offline • IndexedDB storage</div></div>
+    <div class="stats-row">
+      <div class="scard" onclick="setTrackerCat('feed')" style="cursor:pointer;"><div class="sc-icon">🌾</div><div class="scard-num" id="ds-feed">0</div><div class="scard-lbl">Feed Logs</div></div>
+      <div class="scard" onclick="setTrackerCat('eggs')" style="cursor:pointer;"><div class="sc-icon">🥚</div><div class="scard-num" id="ds-eggs">0</div><div class="scard-lbl">Today Eggs</div></div>
+      <div class="scard" onclick="setTrackerCat('expense')" style="cursor:pointer;"><div class="sc-icon">💰</div><div class="scard-num" id="ds-expense">₹0</div><div class="scard-lbl">Expenses</div></div>
+    </div>
+    <div class="ttabs" id="tracker-cat-row" style="overflow-x:auto;scrollbar-width:none;padding:0 16px 12px;display:flex;gap:6px;"></div>
+    <div style="display:flex;gap:8px;padding:0 16px 8px;align-items:center;">
+      <div style="flex:1;display:flex;align-items:center;gap:8px;background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;">
+        <span>🔍</span><input type="text" id="tr-search" placeholder="Search records..." oninput="applyTrackerFilters()" style="border:none;background:none;font-size:13px;color:var(--text);flex:1;outline:none;"/>
+      </div>
+      <button onclick="openExportSheet()" style="width:38px;height:38px;border-radius:10px;background:var(--card);border:1.5px solid var(--border);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Export">📤</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:0 16px 4px;"><span style="font-size:12px;font-weight:700;color:var(--g1);text-transform:uppercase;letter-spacing:.5px;" id="tr-section-title">All Records</span><span style="font-size:11px;color:var(--muted);" id="tr-count"></span></div>
+    <div class="rec-list" id="rec-list" style="padding:0 16px 100px;"></div>
+    <button onclick="openTrackerAddSheet()" style="position:fixed;bottom:88px;right:calc(50% - 200px);width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--g3),var(--g2));border:2px solid var(--gold);color:#fff;font-size:26px;cursor:pointer;box-shadow:0 4px 20px rgba(10,53,32,.3);display:flex;align-items:center;justify-content:center;z-index:150;" title="Add Record">＋</button>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="screen" id="scr-profile">
+    <div style="background:linear-gradient(160deg,var(--g1),var(--g2) 60%,var(--g3));padding:28px 16px 0;text-align:center;position:relative;overflow:hidden;">
+      <div style="position:absolute;right:-30px;top:-30px;width:160px;height:160px;border-radius:50%;background:rgba(201,162,39,.05);border:1px solid rgba(201,162,39,.08);"></div>
+      <div id="prof-av" style="width:80px;height:80px;border-radius:50%;background:rgba(201,162,39,.18);border:3px solid var(--gold);display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:34px;">🌾</div>
+      <div id="prof-name" style="color:#fff;font-size:20px;font-weight:700;">Farmer</div>
+      <div id="prof-type" style="color:var(--gold2);font-size:12px;margin-top:4px;">SR FEEDS Member</div>
+      <div id="prof-since" style="display:inline-block;background:rgba(201,162,39,.18);border:1px solid rgba(201,162,39,.3);color:var(--gold2);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;margin-top:10px;letter-spacing:.5px;">Member since —</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:rgba(0,0,0,.2);border-top:1px solid rgba(255,255,255,.08);margin-top:16px;">
+        <div style="padding:12px 6px;text-align:center;border-right:1px solid rgba(255,255,255,.08);"><div id="qs-lessons" style="color:#fff;font-size:18px;font-weight:700;">0</div><div style="color:rgba(255,255,255,.4);font-size:9px;margin-top:2px;font-weight:600;letter-spacing:.3px;">Lessons</div></div>
+        <div style="padding:12px 6px;text-align:center;border-right:1px solid rgba(255,255,255,.08);"><div id="qs-badges" style="color:#fff;font-size:18px;font-weight:700;">0</div><div style="color:rgba(255,255,255,.4);font-size:9px;margin-top:2px;font-weight:600;letter-spacing:.3px;">Badges</div></div>
+        <div style="padding:12px 6px;text-align:center;border-right:1px solid rgba(255,255,255,.08);"><div id="qs-records" style="color:#fff;font-size:18px;font-weight:700;">0</div><div style="color:rgba(255,255,255,.4);font-size:9px;margin-top:2px;font-weight:600;letter-spacing:.3px;">Records</div></div>
+        <div style="padding:12px 6px;text-align:center;"><div id="qs-streak" style="color:#fff;font-size:18px;font-weight:700;">0</div><div style="color:rgba(255,255,255,.4);font-size:9px;margin-top:2px;font-weight:600;letter-spacing:.3px;">Streak</div></div>
+      </div>
+    </div>
+
+    <!-- LEARNING PROGRESS -->
+    <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;padding:18px 16px 8px;">Learning Progress</div>
+    <div style="padding:0 16px 4px;">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <span style="font-size:13px;font-weight:700;color:var(--text);">Academy Progress</span>
+          <span style="font-size:13px;font-weight:700;color:var(--g3);" id="prof-pct">0%</span>
+        </div>
+        <div style="background:var(--bg);border-radius:6px;height:8px;overflow:hidden;margin-bottom:8px;">
+          <div id="prof-prog-bar" style="height:100%;border-radius:6px;background:linear-gradient(90deg,var(--g3),var(--g4));width:0%;transition:width .6s ease;"></div>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:var(--muted);">Lessons: <strong id="prof-done-lessons">0</strong></span>
+          <span style="font-size:11px;color:var(--muted);">Quizzes: <strong id="prof-done-quizzes">0</strong></span>
+          <span style="font-size:11px;color:var(--muted);">Streak: <strong id="prof-streak">0</strong> days 🔥</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BADGES -->
+    <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;padding:4px 16px 8px;">Badges Earned</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0 16px 12px;" id="prof-badges-grid"></div>
+
+    <!-- SETTINGS -->
+    <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;padding:4px 16px 8px;">Settings</div>
+    <div class="sl-grp">
+      <div class="sl-item"><div class="sl-icon">🌙</div><div class="sl-txt"><div class="sl-lbl">Dark Mode</div><div class="sl-sub">Toggle app theme</div></div><button class="sl-tog" id="dark-tog" onclick="toggleDark()"></button></div>
+      <div class="sl-item"><div class="sl-icon">🔔</div><div class="sl-txt"><div class="sl-lbl">Notifications</div><div class="sl-sub">Farming alerts & reminders</div></div><button class="sl-tog on" id="notif-tog" onclick="toggleNotifPref()"></button></div>
+      <div class="sl-item" onclick="openModal('contact-modal')"><div class="sl-icon">☎️</div><div class="sl-txt"><div class="sl-lbl">Contact SR Feeds</div><div class="sl-sub">+91 98765 43210 • Support</div></div><div class="sl-arr">›</div></div>
+      <div class="sl-item" onclick="exportData()"><div class="sl-icon">📄</div><div class="sl-txt"><div class="sl-lbl">Export Farm Data</div><div class="sl-sub">JSON backup of all records</div></div><div class="sl-arr">›</div></div>
+      <div class="sl-item" onclick="clearAllData()"><div class="sl-icon">🗑️</div><div class="sl-txt"><div class="sl-lbl">Clear App Data</div><div class="sl-sub">Reset all records & progress</div></div><div class="sl-arr" style="color:#dc2626;">›</div></div>
+    </div>
+    <div class="sl-grp">
+      <div class="sl-item"><div class="sl-icon">ℹ️</div><div class="sl-txt"><div class="sl-lbl">About SR Feeds</div><div class="sl-sub">v4.0 Unified Edition • All Phases</div></div><div class="sl-arr">›</div></div>
+      <div class="sl-item"><div class="sl-icon">🔒</div><div class="sl-txt"><div class="sl-lbl">Privacy</div><div class="sl-sub">All data stored on your device only</div></div><div class="sl-arr">›</div></div>
+    </div>
+    <div style="text-align:center;padding:20px 0 32px;font-size:11px;color:var(--muted);line-height:1.8;">SR FEEDS v4.0 Unified Edition<br/>Science • Nutrition • Growth<br/>Made with ❤️ for Farmers Worldwide</div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottomnav">
+    <button class="bn-item active" onclick="switchTab('home',this)"><span class="bn-icon">🏠</span><span class="bn-label">Home</span></button>
+    <button class="bn-item" onclick="switchTab('learn',this)"><span class="bn-icon">📚</span><span class="bn-label">Learn</span></button>
+    <button class="bn-item" onclick="switchTab('tools',this)"><span class="bn-icon">🛠</span><span class="bn-label">Tools</span></button>
+    <button class="bn-item" onclick="switchTab('tracker',this)"><span class="bn-icon">📋</span><span class="bn-label">Tracker</span></button>
+    <button class="bn-item" onclick="switchTab('profile',this)"><span class="bn-icon">👤</span><span class="bn-label">Profile</span></button>
+  </div>
+</div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- FEED CALCULATOR -->
+<div class="overlay" id="calc-modal" onclick="closeOut(event,'calc-modal')">
+<div class="sheet">
+  <button class="sheet-close" onclick="closeModal('calc-modal')">✕</button>
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">🧮 Feed Calculator</div>
+  <div class="frow">
+    <label class="flabel">Animal Type</label>
+    <select class="fselect" id="c-species" onchange="updateCalcStages()">
+      <option value="broiler">🐓 Broiler Chicken</option>
+      <option value="layer">🥚 Layer Hen</option>
+      <option value="cattle">🐄 Cattle / Cow</option>
+      <option value="goat">🐐 Goat</option>
+    </select>
+  </div>
+  <div class="frow">
+    <label class="flabel">Feeding Stage</label>
+    <select class="fselect" id="c-stage"></select>
+  </div>
+  <div class="frow-2">
+    <div class="frow" style="margin:0;">
+      <label class="flabel">Number of Animals</label>
+      <input class="finput" type="number" id="c-count" placeholder="e.g. 500" value="500"/>
+    </div>
+    <div class="frow" style="margin:0;">
+      <label class="flabel">Feed Price (₹/kg)</label>
+      <input class="finput" type="number" id="c-price" placeholder="e.g. 28" value="28"/>
+    </div>
+  </div>
+  <div class="frow">
+    <label class="flabel">Avg Body Weight (kg) — optional</label>
+    <input class="finput" type="number" id="c-weight" placeholder="e.g. 1.2 kg" step="0.1"/>
+  </div>
+  <button class="fcalc-btn" onclick="calcFeed()">Calculate Feed Requirement</button>
+  <div class="calc-res" id="calc-res">
+    <div class="cr-main-lbl">Daily Feed Required</div>
+    <div class="cr-main-val" id="cr-val">--</div>
+    <div class="cr-detail" id="cr-detail"></div>
+    <div class="cr-grid" id="cr-grid"></div>
+  </div>
+  <div class="calc-history" id="calc-history"></div>
+</div>
+</div>
+
+<!-- PROFIT ESTIMATOR -->
+<div class="overlay" id="profit-modal" onclick="closeOut(event,'profit-modal')">
+<div class="sheet">
+  <button class="sheet-close" onclick="closeModal('profit-modal')">✕</button>
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">📈 Profit Estimator</div>
+  <div class="frow">
+    <label class="flabel">Farm Type</label>
+    <select class="fselect" id="p-type" onchange="updateProfitFields()">
+      <option value="broiler">🐓 Broiler (Meat)</option>
+      <option value="layer">🥚 Layer (Eggs)</option>
+      <option value="cattle">🐄 Dairy Cattle</option>
+      <option value="goat">🐐 Goat (Meat)</option>
+    </select>
+  </div>
+  <div class="frow-2">
+    <div class="frow" style="margin:0;">
+      <label class="flabel">No. of Animals</label>
+      <input class="finput" type="number" id="p-count" value="1000"/>
+    </div>
+    <div class="frow" style="margin:0;">
+      <label class="flabel">Production Days</label>
+      <input class="finput" type="number" id="p-days" value="42"/>
+    </div>
+  </div>
+  <div class="frow-2">
+    <div class="frow" style="margin:0;">
+      <label class="flabel" id="p-label1">Feed Cost/kg (₹)</label>
+      <input class="finput" type="number" id="p-val1" value="28"/>
+    </div>
+    <div class="frow" style="margin:0;">
+      <label class="flabel" id="p-label2">Sale Price/kg (₹)</label>
+      <input class="finput" type="number" id="p-val2" value="95"/>
+    </div>
+  </div>
+  <div class="frow-2">
+    <div class="frow" style="margin:0;">
+      <label class="flabel" id="p-label3">Purchase Cost (₹ each)</label>
+      <input class="finput" type="number" id="p-val3" value="40"/>
+    </div>
+    <div class="frow" style="margin:0;">
+      <label class="flabel">Medicine & Labour (₹)</label>
+      <input class="finput" type="number" id="p-overhead" value="12000"/>
+    </div>
+  </div>
+  <div class="frow">
+    <label class="flabel">Expected Mortality %</label>
+    <input class="finput" type="number" id="p-mort" value="4" step="0.5"/>
+  </div>
+  <button class="fcalc-btn" onclick="calcProfit()">Estimate Profit & Break-Even</button>
+  <div class="profit-res" id="profit-res">
+    <div class="pr-lbl">Estimated Net Profit</div>
+    <div class="pr-main" id="pr-main">₹ --</div>
+    <div class="pr-breakdown" id="pr-breakdown"></div>
+    <div class="pr-be" id="pr-be"></div>
+  </div>
+  <div class="calc-history" id="profit-history"></div>
+</div>
+</div>
+
+<!-- DISEASE GUIDE -->
+<div class="overlay" id="disease-modal" onclick="closeOut(event,'disease-modal')">
+<div class="sheet" style="max-height:92vh;">
+  <button class="sheet-close" onclick="closeModal('disease-modal')">✕</button>
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">🩺 Disease Guide</div>
+  <div class="search-wrap"><span class="search-ic">🔍</span><input class="search-inp" placeholder="Search disease, symptom, species..." oninput="filterDiseases(this.value)" id="dis-search"/></div>
+  <div class="dis-cat-row" id="dis-cat-row"></div>
+  <div id="dis-list"></div>
+  <div class="disclaimer">⚠️ <strong>Disclaimer:</strong> This guide provides general information only. Always consult a licensed veterinarian for diagnosis, treatment, and medication dosages.</div>
+</div>
+</div>
+
+<!-- FEED WIZARD -->
+<div class="overlay" id="wizard-modal" onclick="closeOut(event,'wizard-modal')">
+<div class="sheet">
+  <button class="sheet-close" onclick="closeModal('wizard-modal')">✕</button>
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">✨ Smart Feed Wizard</div>
+  <div id="wiz-content"></div>
+</div>
+</div>
+
+<!-- VACCINATION PLANNER -->
+<div class="overlay" id="vaccine-modal" onclick="closeOut(event,'vaccine-modal')">
+<div class="sheet" style="max-height:92vh;">
+  <button class="sheet-close" onclick="closeModal('vaccine-modal')">✕</button>
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">💉 Vaccination Planner</div>
+  <div class="tabs" id="vac-tabs" style="padding:0 0 12px;gap:8px;">
+    <div class="tab active" onclick="showVacTab('broiler',this)">🐓 Broiler</div>
+    <div class="tab" onclick="showVacTab('layer',this)">🥚 Layer</div>
+    <div class="tab" onclick="showVacTab('cattle',this)">🐄 Cattle</div>
+    <div class="tab" onclick="showVacTab('goat',this)">🐐 Goat</div>
+  </div>
+  <div id="vac-body"></div>
+  <div style="background:var(--accent);border-radius:10px;padding:10px 12px;margin-top:8px;font-size:11px;color:var(--g1);line-height:1.6;">✅ Tap the circle to mark a vaccination as <strong>completed</strong>. Tap 🔔 to set a browser reminder.</div>
+</div>
+</div>
+
+<!-- PRODUCT CATALOG -->
+<div class="overlay" id="catalog-modal" onclick="closeOut(event,'catalog-modal')">
+<div class="sheet" style="max-height:92vh;">
+  <button class="sheet-close" onclick="closeModal('catalog-modal')">✕</button>
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">📦 SR FEEDS Product Catalog</div>
+  <div class="search-wrap"><span class="search-ic">🔍</span><input class="search-inp" placeholder="Search product, type, stage..." oninput="filterCatalog(this.value)" id="catalog-search"/></div>
+  <div class="tabs" id="cat-filter-tabs" style="padding:0 0 12px;gap:6px;">
+    <div class="tab active" onclick="setCatFilter('All',this)">All</div>
+    <div class="tab" onclick="setCatFilter('Broiler',this)">🐓 Broiler</div>
+    <div class="tab" onclick="setCatFilter('Layer',this)">🥚 Layer</div>
+    <div class="tab" onclick="setCatFilter('Cattle',this)">🐄 Cattle</div>
+    <div class="tab" onclick="setCatFilter('Goat',this)">🐐 Goat</div>
+  </div>
+  <div id="catalog-body"></div>
+</div>
+</div>
+
+<!-- DEALER LOCATOR -->
+<div class="overlay" id="dealer-modal" onclick="closeOut(event,'dealer-modal')">
+<div class="sheet">
+  <button class="sheet-close" onclick="closeModal('dealer-modal')">✕</button>
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">📍 Dealer Locator</div>
+  <div class="search-wrap"><span class="search-ic">🔍</span><input class="search-inp" placeholder="Search by city, district or type..." oninput="filterDealers(this.value)" id="dealer-search"/></div>
+  <div class="dis-cat-row" id="dealer-cat-row"></div>
+  <div id="dealer-body"></div>
+</div>
+</div>
+
+<!-- CONTACT -->
+<div class="overlay" id="contact-modal" onclick="closeOut(event,'contact-modal')">
+<div class="sheet">
+  <button class="sheet-close" onclick="closeModal('contact-modal')">✕</button>
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">☎️ Contact SR Feeds</div>
+  <div class="contact-btn" onclick="window.open('tel:+919876543210')"><div class="cb-ic cb-green">📞</div><div><div class="cb-lbl">Call Us</div><div class="cb-val">+91 98765 43210</div></div></div>
+  <div class="contact-btn" onclick="window.open('https://wa.me/919876543210')"><div class="cb-ic cb-green">💬</div><div><div class="cb-lbl">WhatsApp</div><div class="cb-val">Chat with expert team</div></div></div>
+  <div class="contact-btn" onclick="window.open('mailto:info@srfeeds.com')"><div class="cb-ic cb-blue">📧</div><div><div class="cb-lbl">Email</div><div class="cb-val">info@srfeeds.com</div></div></div>
+  <div class="contact-btn" onclick="window.open('https://srfeedskbt-maker.github.io')"><div class="cb-ic cb-gold">🌐</div><div><div class="cb-lbl">Website</div><div class="cb-val">srfeedskbt-maker.github.io</div></div></div>
+  <div style="background:var(--accent);border-radius:12px;padding:14px 16px;font-size:13px;color:var(--g1);line-height:1.7;margin-top:4px;">
+    <strong>SR Feeds</strong><br/>Kalaburagi, Karnataka, India<br/>Mon–Sat: 9:00 AM – 6:00 PM IST<br/>Science • Nutrition • Growth
+  </div>
+</div>
+</div>
+
+<!-- NOTIFICATION CENTER -->
+<div class="overlay" id="notif-modal" onclick="closeOut(event,'notif-modal')">
+<div class="sheet">
+  <button class="sheet-close" onclick="closeModal('notif-modal')">✕</button>
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">🔔 Notification Center</div>
+  <div id="notif-list"></div>
+  <button class="fcalc-btn" style="margin-top:8px;background:var(--bg);color:var(--muted);border:1px solid var(--border);" onclick="clearNotifs()">Clear All Notifications</button>
+</div>
+</div>
+
+<!-- ADD RECORD (new full tracker) -->
+<div class="overlay" id="addrec-modal" onclick="closeOut(event,'addrec-modal')">
+<div class="sheet">
+  <button class="sheet-close" onclick="closeModal('addrec-modal')">✕</button>
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" id="addrec-title">Add Record</div>
+  <div id="cat-picker-wrap"></div>
+  <div id="addrec-form"></div>
+</div>
+</div>
+
+<!-- VIEW RECORD DETAIL -->
+<div class="overlay" id="view-rec-modal" onclick="closeOut(event,'view-rec-modal')">
+<div class="sheet">
+  <button class="sheet-close" onclick="closeModal('view-rec-modal')">✕</button>
+  <div class="sheet-handle"></div>
+  <div id="view-rec-body"></div>
+</div>
+</div>
+
+<!-- EXPORT SHEET -->
+<div class="overlay" id="export-sheet" onclick="closeOut(event,'export-sheet')">
+<div class="sheet">
+  <button class="sheet-close" onclick="closeModal('export-sheet')">✕</button>
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">📤 Export Farm Data</div>
+  <div onclick="exportCSV()" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;border:1px solid var(--border);cursor:pointer;margin-bottom:10px;background:var(--bg);"><div style="width:44px;height:44px;border-radius:10px;background:#e8f5ee;display:flex;align-items:center;justify-content:center;font-size:22px;">📊</div><div><div style="font-size:14px;font-weight:700;color:var(--g1);">Export as CSV</div><div style="font-size:11px;color:var(--muted);">Open in Excel or Google Sheets</div></div><span style="color:var(--muted);margin-left:auto;">›</span></div>
+  <div onclick="exportJSON()" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;border:1px solid var(--border);cursor:pointer;margin-bottom:10px;background:var(--bg);"><div style="width:44px;height:44px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;font-size:22px;">🗂️</div><div><div style="font-size:14px;font-weight:700;color:var(--g1);">Export as JSON</div><div style="font-size:11px;color:var(--muted);">Full backup of all tracker data</div></div><span style="color:var(--muted);margin-left:auto;">›</span></div>
+  <div style="background:var(--accent);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--g2);line-height:1.6;margin-top:4px;">ℹ️ All exports download locally. No data sent to any server.</div>
+</div>
+</div>
+
+<!-- SEARCH MODAL -->
+<div class="overlay" id="search-modal" onclick="closeOut(event,'search-modal')">
+<div class="sheet">
+  <button class="sheet-close" onclick="closeModal('search-modal')">✕</button>
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">🔍 Global Search</div>
+  <div class="search-wrap"><span class="search-ic">🔍</span><input class="search-inp" id="main-search-inp" placeholder="Search feed, disease, calculator, product..." oninput="doSearch(this.value)"/></div>
+  <div id="search-results"><div style="padding:12px 0;font-size:13px;color:var(--muted);">Type to search diseases, products, tools, FAQs...</div></div>
+</div>
+</div>
+
+<script>
+// =============================================
+// STORAGE HELPERS
+// =============================================
+const LS = {
+  get(k, def=null){ try{ const v=localStorage.getItem(k); return v===null?def:JSON.parse(v); }catch(e){ return def; } },
+  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+
+// =============================================
+// DATA
+// =============================================
+const OB_SLIDES=[
+  {ic:'🌾',title:'Welcome to SR Feeds',desc:'India\'s premium science-backed animal nutrition brand. Now on your phone — works fully offline, worldwide.'},
+  {ic:'🐓',title:'Healthier Animals',desc:'Precision nutrition formulated for every stage of your livestock\'s lifecycle. From chick to market.'},
+  {ic:'📈',title:'Higher Productivity',desc:'Optimized FCR, stronger immunity, better egg yields, higher milk output. Science that pays.'},
+  {ic:'🛠',title:'Smart Farm Tools',desc:'Feed calculator, profit estimator, disease guide, vaccination planner — all offline, all free.'},
+  {ic:'📱',title:'100% Offline Ready',desc:'All guides, calculators, disease data, and farm records work without internet. Always.'},
+];
+let obIdx=0;
+
+const TIPS=[
+  'Broiler chicks need water before feed in the first hour. Dehydration in hour 1 causes poor growth for the entire flock life.',
+  'Layer hens need 16+ hours of light daily for peak egg production. Use artificial lighting in winter months.',
+  'Never mix fresh and stored feed. Mold in old feed is the #1 cause of mysterious flock health problems.',
+  'A 1% improvement in FCR across 1000 broilers saves ₹2,000–3,000 per batch. Feed quality is profitability.',
+  'Cattle need 10% of body weight in dry matter daily. Underfeeding reduces milk yield by up to 20%.',
+  'Goat kids that receive colostrum in the first 6 hours have 40% lower mortality rates.',
+  'Heat stress above 35°C reduces broiler weight gain by 15–20%. Ensure proper ventilation and cooling.',
+  'Pre-layer feed with 1.8–2% calcium builds bone reserves for strong eggshells from day one of laying.',
+  'Keep drinkers clean and refill with cool water every 4 hours during summer for better feed intake.',
+  'Record your feed consumption daily. A sudden drop in intake is always the first sign of disease.',
+];
+
+const DISEASES=[
+  {name:'Newcastle Disease (ND)',sp:'Poultry',cat:'Poultry',symptoms:'Twisting/drooping neck, gasping, green watery diarrhea, sudden high mortality, nervous signs',cause:'Paramyxovirus – highly contagious',prev:'Day 7 eye drop, Day 21 booster, Day 42 injection. Strict biosecurity.',resp:'Isolate all affected birds immediately. Contact veterinarian urgently. No effective treatment — prevention is critical.',sev:'critical'},
+  {name:'Ranikhet Disease',sp:'Poultry',cat:'Poultry',symptoms:'Respiratory distress, nervous tremors, greenish diarrhea, sudden egg production drop',cause:'Newcastle virus variant (NDV)',prev:'Regular ND vaccination program, biosecurity, quarantine new birds',resp:'No specific treatment. Supportive vitamins, electrolytes. Report to authorities if severe.',sev:'critical'},
+  {name:"Marek's Disease",sp:'Poultry',cat:'Poultry',symptoms:'Progressive leg/wing paralysis, grey iris, wasting, tumors, sudden death',cause:'Herpesvirus (Meleagrid herpesvirus)',prev:'Day-1 hatchery vaccination ONLY. Cannot vaccinate after infection.',resp:'Cull affected birds. Improve biosecurity. No treatment available.',sev:'high'},
+  {name:'Coccidiosis',sp:'Poultry',cat:'Poultry',symptoms:'Bloody/mucoid droppings, ruffled feathers, huddling, poor growth, high mortality in young birds',cause:'Eimeria species (protozoan parasite)',prev:'Coccidiostat in starter feed, dry litter, avoid overcrowding',resp:'Amprolium or Toltrazuril via water 3–5 days. Consult vet for dosage.',sev:'medium'},
+  {name:'Gumboro (IBD)',sp:'Poultry',cat:'Poultry',symptoms:'Ruffled feathers, prostration, watery diarrhea, dehydration, pecking at own vent',cause:'Birnavirus (attacks bursa of Fabricius)',prev:'Vaccination Day 14 and Day 28. Breed selection for resistance.',resp:'Supportive: electrolytes, vitamins. Increase biosecurity. Consult vet.',sev:'high'},
+  {name:'Chronic Respiratory Disease (CRD)',sp:'Poultry',cat:'Poultry',symptoms:'Nasal discharge, sneezing, facial swelling, respiratory rales, poor growth and feed intake',cause:'Mycoplasma gallisepticum (bacteria)',prev:'MG-free breeding stock, biosecurity, antibiotic prevention in feed',resp:'Tylosin or Enrofloxacin via water under vet supervision. Improve ventilation.',sev:'medium'},
+  {name:'Fowl Pox',sp:'Poultry',cat:'Poultry',symptoms:'Wart-like scabs on comb, wattles, eyelids; white patches in mouth (wet pox)',cause:'Avipoxvirus – spread by mosquitoes',prev:'Wing web vaccination at week 6–8. Mosquito control.',resp:'No specific treatment. Isolate affected birds. Supportive vitamins A & E.',sev:'medium'},
+  {name:'Foot & Mouth Disease (FMD)',sp:'Cattle / Goat',cat:'Cattle',symptoms:'Blisters on tongue, gums, feet, teats. Excessive drooling, lameness, fever, milk drop',cause:'FMD Aphthovirus – highly contagious',prev:'Bi-annual FMD vaccination. Strict farm entry controls.',resp:'Isolate immediately. Disinfect entire farm. Notify authorities. Wound antiseptic care.',sev:'critical'},
+  {name:'Mastitis',sp:'Cattle',cat:'Cattle',symptoms:'Swollen, hot, painful udder. Reduced milk with clots, pus or blood. Fever, loss of appetite',cause:'Bacteria: Staphylococcus, Streptococcus, E. coli',prev:'Teat dipping post-milking, clean bedding, proper milking hygiene, dry cow therapy',resp:'Intramammary antibiotic infusion under vet guidance. Strip affected quarter frequently.',sev:'high'},
+  {name:'Bovine Bloat',sp:'Cattle / Goat',cat:'Cattle',symptoms:'Distended left abdomen (visibly swollen), discomfort, kicking belly, difficulty breathing, sudden death',cause:'Gas trapped in rumen from wet legumes or sudden diet change',prev:'Avoid wet legume pasture, gradual diet transition, anti-foaming agents',resp:'Stomach tube for free gas. Poloxalene/oil for frothy bloat. Emergency vet puncture if critical.',sev:'high'},
+  {name:'Milk Fever (Hypocalcaemia)',sp:'Cattle',cat:'Cattle',symptoms:'Muscle tremors, staggering, inability to stand, cold extremities, loss of consciousness in cows post-calving',cause:'Sudden drop in blood calcium at calving',prev:'Pre-calving calcium-controlled diet. Vitamin D supplementation.',resp:'IV calcium borogluconate injection by vet immediately. Life-threatening — act fast.',sev:'critical'},
+  {name:'PPR – Goat Plague',sp:'Goat / Sheep',cat:'Goat',symptoms:'High fever (41°C+), nasal/eye discharge, mouth ulcers, pneumonia, severe diarrhea, high mortality',cause:'Morbillivirus (Peste des petits ruminants)',prev:'Annual PPR vaccination. Quarantine new animals 3 weeks.',resp:'Isolate immediately. Antibiotics for secondary infections. Report outbreak to authorities.',sev:'critical'},
+  {name:'Enterotoxaemia (Goat)',sp:'Goat',cat:'Goat',symptoms:'Sudden death, convulsions, diarrhea, bloating in well-fed animals, sweet-smelling breath',cause:'Clostridium perfringens toxin (types C & D)',prev:'Vaccination every 6 months. Avoid sudden high-energy feed changes.',resp:'Antitoxin injection if caught early. Vet treatment urgently required.',sev:'critical'},
+  {name:'Goat Worm Infestation',sp:'Goat',cat:'Goat',symptoms:'Weight loss, bottle jaw (swelling under chin), pale gums, rough coat, diarrhea, poor growth',cause:'Haemonchus contortus and other GI nematodes',prev:'Regular deworming rotation, avoid overgrazing, pasture management',resp:'Benzimidazole or levamisole deworming under vet guidance. Rotate drug classes.',sev:'medium'},
+  {name:'Brucellosis (Cattle/Goat)',sp:'Cattle / Goat',cat:'Cattle',symptoms:'Abortion in late pregnancy, retained placenta, infertility, orchitis in males, joint swelling',cause:'Brucella abortus / B. melitensis (bacteria)',prev:'Vaccination of female calves 4–8 months (Strain 19). Biosecurity.',resp:'No treatment — cull infected animals. Report mandatory to veterinary authorities.',sev:'critical'},
+];
+
+const CALC_STAGES={
+  broiler:[
+    {label:'Pre-Starter – Day 1–10',rate:20,unit:'g',cp:'21–23%',energy:'2850–2950 kcal/kg',lysine:'1.2%',meth:'0.55%',form:'Crumble'},
+    {label:'Starter Crumble – Day 11–21',rate:50,unit:'g',cp:'20–21%',energy:'2950–3000 kcal/kg',lysine:'1.1%',meth:'0.50%',form:'Crumble'},
+    {label:'Grower Pellets – Day 22–30',rate:100,unit:'g',cp:'18–19%',energy:'3000–3100 kcal/kg',lysine:'1.0%',meth:'0.45%',form:'Pellets'},
+    {label:'Finisher Pellets – Day 31+',rate:150,unit:'g',cp:'17–18%',energy:'3100–3200 kcal/kg',lysine:'0.9%',meth:'0.40%',form:'Pellets'},
+  ],
+  layer:[
+    {label:'Chick Pre-Starter – 0–4 Weeks',rate:25,unit:'g',cp:'20–21%',energy:'2850–2900 kcal/kg',lysine:'1.05%',meth:'0.45%',form:'Crumble'},
+    {label:'Chick Starter – 5–8 Weeks',rate:45,unit:'g',cp:'19–20%',energy:'2800–2900 kcal/kg',lysine:'1.00%',meth:'0.42%',form:'Crumble'},
+    {label:'Grower Phase 1 – 9–12 Weeks',rate:65,unit:'g',cp:'17–18%',energy:'2700–2800 kcal/kg',lysine:'0.85%',meth:'0.38%',form:'Pellets'},
+    {label:'Grower Phase 2 – 13–16 Weeks',rate:80,unit:'g',cp:'16–17%',energy:'2650–2750 kcal/kg',lysine:'0.80%',meth:'0.35%',form:'Pellets'},
+    {label:'Pre-Layer – 17–18 Weeks',rate:90,unit:'g',cp:'16–17%',energy:'2700–2800 kcal/kg',lysine:'0.85%',meth:'0.38%',form:'Pellets'},
+    {label:'Layer Phase 1 Peak – 19–32 Weeks',rate:115,unit:'g',cp:'17–18%',energy:'2700–2800 kcal/kg',lysine:'0.82%',meth:'0.36%',form:'Pellets'},
+    {label:'Layer Phase 2 Mid – 33–50 Weeks',rate:115,unit:'g',cp:'16–17%',energy:'2700–2800 kcal/kg',lysine:'0.78%',meth:'0.34%',form:'Pellets'},
+    {label:'Layer Phase 3 Late – 51+ Weeks',rate:110,unit:'g',cp:'15–16%',energy:'2650–2750 kcal/kg',lysine:'0.72%',meth:'0.32%',form:'Pellets'},
+  ],
+  cattle:[
+    {label:'Calf Starter – 0–3 Months',rate:1.5,unit:'kg',cp:'18–20%',energy:'High energy',lysine:'—',meth:'—',form:'Pellets'},
+    {label:'Grower – 3–12 Months',rate:4,unit:'kg',cp:'16–18%',energy:'2700–2900 kcal/kg',lysine:'—',meth:'—',form:'Mash/Pellets'},
+    {label:'Heifer – 12–24 Months',rate:5.5,unit:'kg',cp:'14–16%',energy:'2500–2700 kcal/kg',lysine:'—',meth:'—',form:'High-fiber'},
+    {label:'Lactating Cow',rate:8,unit:'kg',cp:'16–18%',energy:'2700–2900 + bypass fat',lysine:'—',meth:'—',form:'Dairy Pellets'},
+    {label:'Dry Cow – Pre-Calving',rate:5,unit:'kg',cp:'Controlled',energy:'Moderate energy',lysine:'—',meth:'—',form:'Mineral-rich'},
+    {label:'Fattening – Beef Cattle',rate:7,unit:'kg',cp:'14–16%',energy:'High energy ration',lysine:'—',meth:'—',form:'Mash/Pellets'},
+  ],
+  goat:[
+    {label:'Kid Starter – 0–3 Months',rate:0.3,unit:'kg',cp:'18–20%',energy:'High protein',lysine:'—',meth:'—',form:'Pellets'},
+    {label:'Grower – 3–9 Months',rate:0.6,unit:'kg',cp:'16–18%',energy:'2700–2900 kcal/kg',lysine:'—',meth:'—',form:'Mash/Pellets'},
+    {label:'Breeding / Adult – 9+ Months',rate:0.8,unit:'kg',cp:'14–16%',energy:'2600–2750 kcal/kg',lysine:'—',meth:'—',form:'Concentrate+fodder'},
+    {label:'Pregnant & Lactating',rate:1.0,unit:'kg',cp:'16–18%',energy:'High energy + Ca/P',lysine:'—',meth:'—',form:'Pellets'},
+    {label:'Fattening / Meat Goat',rate:1.2,unit:'kg',cp:'Energy-rich',energy:'High grain ration',lysine:'—',meth:'—',form:'High-energy'},
+  ],
+};
+
+const PRODUCTS=[
+  {name:'BPS – Broiler Pre-Starter',type:'Broiler',age:'Day 1–10',form:'Crumble',icon:'🐓',cp:'21–23%',energy:'2850–2950',ly:'1.2%',me:'0.55%',ca:'1.0%',p:'0.45–0.50%',use:'First feed for day-old chicks. High protein for gut development and immunity. Feed ad libitum.'},
+  {name:'BSC – Broiler Starter Crumble',type:'Broiler',age:'Day 11–21',form:'Crumble',icon:'🐓',cp:'20–21%',energy:'2950–3000',ly:'1.1%',me:'0.50%',ca:'0.9%',p:'0.42–0.45%',use:'Continue from BPS. Uniform crumble for even flock growth. Builds bone and muscle.'},
+  {name:'BGP – Broiler Grower Pellets',type:'Broiler',age:'Day 22–30',form:'Pellets',icon:'🐓',cp:'18–19%',energy:'3000–3100',ly:'1.0%',me:'0.45%',ca:'0.85%',p:'0.40–0.42%',use:'Transition to pellets at Day 22. Best FCR efficiency. Rapid weight gain phase.'},
+  {name:'BF – Broiler Finisher Pellets',type:'Broiler',age:'Day 31–Market',form:'Pellets',icon:'🐓',cp:'17–18%',energy:'3100–3200',ly:'0.9%',me:'0.40%',ca:'0.8%',p:'0.35–0.38%',use:'Final phase to market weight. High energy for bulk gain. Withdraw as per slaughter guidelines.'},
+  {name:'Layer Chick Pre-Starter',type:'Layer',age:'0–4 Weeks',form:'Crumble',icon:'🥚',cp:'20–21%',energy:'2850–2900',ly:'1.05%',me:'0.45%',ca:'1.0%',p:'0.50%',use:'Day-old layer chick feed. Rapid growth and immunity building. Feed ad libitum.'},
+  {name:'Layer Chick Starter',type:'Layer',age:'5–8 Weeks',form:'Crumble',icon:'🥚',cp:'19–20%',energy:'2800–2900',ly:'1.00%',me:'0.42%',ca:'1.0%',p:'0.48%',use:'Continue growth phase. Prevents obesity in pullets. Controlled feeding recommended.'},
+  {name:'Layer Grower Phase 1',type:'Layer',age:'9–12 Weeks',form:'Pellets',icon:'🥚',cp:'17–18%',energy:'2700–2800',ly:'0.85%',me:'0.38%',ca:'1.0%',p:'0.45%',use:'Bone and frame development. Low calcium maintained. Restricted feeding plan.'},
+  {name:'Layer Phase 1 (Peak)',type:'Layer',age:'19–32 Weeks',form:'Pellets',icon:'🥚',cp:'17–18%',energy:'2700–2800',ly:'0.82%',me:'0.36%',ca:'3.5–3.8%',p:'0.38–0.40%',use:'Peak production feed. High calcium for eggshell strength. Ad libitum feeding.'},
+  {name:'Layer Phase 2 (Mid)',type:'Layer',age:'33–50 Weeks',form:'Pellets',icon:'🥚',cp:'16–17%',energy:'2700–2800',ly:'0.78%',me:'0.34%',ca:'3.8–4.0%',p:'0.35–0.38%',use:'Sustained production. Increased calcium as shell quality may decline. Continue ad lib.'},
+  {name:'Cattle Calf Starter',type:'Cattle',age:'0–3 Months',form:'Pellets',icon:'🐄',cp:'18–20%',energy:'High energy',ly:'—',me:'—',ca:'0.9%',p:'0.5%',use:'Introduce at day 3–5 alongside milk. Encourage rumen development. Transition to full concentrate by week 8.'},
+  {name:'Dairy Cow Pellets (Lactating)',type:'Cattle',age:'Lactation',form:'Pellets',icon:'🐄',cp:'16–18%',energy:'Bypass fat blend',ly:'—',me:'—',ca:'0.8%',p:'0.45%',use:'Feed 1 kg pellet per 2.5–3 L milk produced above maintenance. Top up with quality roughage.'},
+  {name:'Goat Kid Starter',type:'Goat',age:'0–3 Months',form:'Pellets',icon:'🐐',cp:'18–20%',energy:'High protein',ly:'—',me:'—',ca:'0.9%',p:'0.5%',use:'Creep feed for kids from week 2. Supports rumen development alongside milk feeding.'},
+  {name:'Goat Grower Feed',type:'Goat',age:'3–9 Months',form:'Mash/Pellets',icon:'🐐',cp:'16–18%',energy:'2700–2900',ly:'—',me:'—',ca:'0.8%',p:'0.45%',use:'Body-building stage. 200–400g concentrate per day with access to good fodder and water.'},
+];
+
+const VACCINES={
+  broiler:[
+    {day:'Day 1',v:'Marek\'s Disease Vaccine',route:'Subcutaneous injection at hatchery',key:'vac_br_0'},
+    {day:'Day 7',v:'Newcastle Disease (ND) + Infectious Bronchitis (IB)',route:'Eye drop or drinking water',key:'vac_br_1'},
+    {day:'Day 14',v:'Gumboro / IBD Vaccine',route:'Drinking water',key:'vac_br_2'},
+    {day:'Day 21',v:'Newcastle Disease Booster (ND-Lasota)',route:'Drinking water / eye drop',key:'vac_br_3'},
+    {day:'Day 28',v:'Gumboro Booster (high-risk areas)',route:'Drinking water',key:'vac_br_4'},
+  ],
+  layer:[
+    {day:'Day 1',v:'Marek\'s Disease',route:'Subcutaneous injection',key:'vac_la_0'},
+    {day:'Day 7',v:'ND + IB (Lasota strain)',route:'Eye drop',key:'vac_la_1'},
+    {day:'Day 14',v:'IBD / Gumboro',route:'Drinking water',key:'vac_la_2'},
+    {day:'Day 21',v:'ND Booster (Lasota)',route:'Eye drop / drinking water',key:'vac_la_3'},
+    {day:'Week 6 (Day 42)',v:'Fowl Pox',route:'Wing web prick',key:'vac_la_4'},
+    {day:'Week 8',v:'Avian Encephalomyelitis (AE)',route:'Drinking water',key:'vac_la_5'},
+    {day:'Week 10',v:'ND + IB + EDS killed vaccine',route:'Intramuscular injection',key:'vac_la_6'},
+    {day:'Week 16',v:'Pre-layer ND+IB+EDS booster',route:'Intramuscular injection',key:'vac_la_7'},
+  ],
+  cattle:[
+    {day:'Every 6 months from 3 months',v:'FMD – Foot & Mouth Disease (all strains)',route:'Subcutaneous injection',key:'vac_ca_0'},
+    {day:'Annual from 3 months',v:'HS – Haemorrhagic Septicaemia',route:'Subcutaneous injection',key:'vac_ca_1'},
+    {day:'Annual from 6 months',v:'BQ – Blackquarter',route:'Subcutaneous injection',key:'vac_ca_2'},
+    {day:'Once at 4–8 months (females only)',v:'Brucellosis (Strain 19 / RB51)',route:'Subcutaneous injection',key:'vac_ca_3'},
+    {day:'Annual (tick-prone areas)',v:'Theileriosis (Tick Fever)',route:'Subcutaneous injection',key:'vac_ca_4'},
+  ],
+  goat:[
+    {day:'Every 6 months',v:'PPR – Peste des Petits Ruminants',route:'Subcutaneous injection',key:'vac_go_0'},
+    {day:'Every 6 months',v:'FMD – Foot & Mouth Disease',route:'Subcutaneous injection',key:'vac_go_1'},
+    {day:'Every 6 months',v:'Enterotoxaemia (Clostridium CD-T)',route:'Subcutaneous injection',key:'vac_go_2'},
+    {day:'Annual',v:'Goat Pox',route:'Intramuscular injection',key:'vac_go_3'},
+    {day:'Annual endemic areas (females only)',v:'Brucellosis',route:'Subcutaneous injection',key:'vac_go_4'},
+  ],
+};
+
+const DEALERS=[
+  {name:'SR Feeds – Main Office',loc:'Kalaburagi, Karnataka, India',city:'Kalaburagi',type:'Headquarters',phone:'+91 98765 43210'},
+  {name:'AgroMart Feeds',loc:'Gulbarga Road, Kalaburagi District',city:'Kalaburagi',type:'Authorized Dealer',phone:'+91 87654 32109'},
+  {name:'Farm Fresh Agro',loc:'Bidar, Karnataka',city:'Bidar',type:'Authorized Dealer',phone:'+91 76543 21098'},
+  {name:'Krishik Agro Center',loc:'Raichur, Karnataka',city:'Raichur',type:'Distributor',phone:'+91 65432 10987'},
+  {name:'Poultry Point',loc:'Yadgir, Karnataka',city:'Yadgir',type:'Dealer',phone:'+91 54321 09876'},
+  {name:'Green Pastures Agro',loc:'Vijayapura (Bijapur), Karnataka',city:'Vijayapura',type:'Dealer',phone:'+91 44321 09875'},
+  {name:'Sri Lakshmi Agro Enterprises',loc:'Gulbarga City, Karnataka',city:'Kalaburagi',type:'Dealer',phone:'+91 99001 23456'},
+  {name:'Modern Poultry Supplies',loc:'Bidar District, Karnataka',city:'Bidar',type:'Authorized Dealer',phone:'+91 88991 23456'},
+];
+
+const FAQ=[
+  {q:'What is FCR and why does it matter?',a:'FCR (Feed Conversion Ratio) measures how many kg of feed are needed to produce 1 kg of body weight gain. A broiler FCR of 1.6 means 1.6 kg feed → 1 kg meat. Lower FCR = less feed cost per kg of output = higher profit.'},
+  {q:'How much feed does a broiler need per day?',a:'Day 1–10: 15–20g/bird/day\nDay 11–21: 35–55g/bird/day\nDay 22–30: 80–110g/bird/day\nDay 31+: 120–160g/bird/day\n\nAlways ensure fresh water 24/7. Water intake is 1.5–2× feed intake.'},
+  {q:'When should I switch between broiler feed stages?',a:'Switch strictly by age, not body weight: Pre-Starter (Day 1–10) → Starter (Day 11–21) → Grower (Day 22–30) → Finisher (Day 31 to market). Premature switching reduces performance.'},
+  {q:'How many eggs should a good layer produce per year?',a:'A healthy layer on SR FEEDS 8-Phase Program should produce 280–310 eggs per year. Peak production at 24–28 weeks. Proper pre-layer calcium supplementation is critical.'},
+  {q:'What causes sudden drop in egg production?',a:'Common causes: Disease (ND, IB), inadequate lighting (<16 hrs/day), nutritional deficiency (calcium, protein), heat stress, water restriction, sudden diet change, or aging flock.'},
+  {q:'How much milk can I expect from dairy cows?',a:'HF/Jersey crossbred: 15–25 L/day. Sahiwal/GIR: 8–15 L/day. Buffalo: 8–12 L/day.\nMilk yield improves significantly with adequate bypass protein and energy during peak lactation.'},
+  {q:'Are SR FEEDS products safe from growth hormones?',a:'Yes, SR FEEDS products are completely safe. We use NO synthetic growth hormones. Our formulations use balanced amino acids, natural enzymes, probiotics, and vitamins. BIS and FSSAI compliant.'},
+  {q:'Can I mix SR FEEDS with local feed ingredients?',a:'For best results, use SR FEEDS as the complete ration. If supplementing, consult our technical team first. Diluting the formulation with raw grains without rebalancing reduces performance.'},
+];
+
+const WIZ_STEPS=[
+  {key:'species',title:'What animal do you raise?',sub:'Select your livestock type.',opts:[{ic:'🐓',lbl:'Broiler',val:'broiler'},{ic:'🥚',lbl:'Layer Hen',val:'layer'},{ic:'🐄',lbl:'Cattle / Cow',val:'cattle'},{ic:'🐐',lbl:'Goat',val:'goat'}]},
+  {key:'age',title:'What age/stage are they?',sub:'Select the current life stage of your animals.',opts:[{ic:'🐣',lbl:'Young (0–3 wks)',val:'young'},{ic:'🐦',lbl:'Growing (3–8 wks)',val:'growing'},{ic:'🐔',lbl:'Adult / Mature',val:'adult'},{ic:'🏆',lbl:'Market Ready',val:'market'}]},
+  {key:'goal',title:'What is your main goal?',sub:'What outcome matters most right now?',opts:[{ic:'📈',lbl:'Max Growth / FCR',val:'growth'},{ic:'🥚',lbl:'More Eggs',val:'egg'},{ic:'🥛',lbl:'Milk Yield',val:'milk'},{ic:'💰',lbl:'Best Profit',val:'profit'}]},
+  {key:'budget',title:'What is your feed budget?',sub:'Approximate cost per kg you can spend.',opts:[{ic:'💵',lbl:'Economy (<₹25/kg)',val:'economy'},{ic:'💰',lbl:'Standard (₹25–35)',val:'standard'},{ic:'💎',lbl:'Premium (₹35+)',val:'premium'},{ic:'🤔',lbl:'Not sure',val:'any'}]},
+];
+const WIZ_RECS={
+  broiler:{young:{name:'BPS – Broiler Pre-Starter',form:'Crumble',cp:'21–23%',energy:'2850–2950 kcal/kg',desc:'Designed for day-old chicks Day 1–10. High protein for gut development, probiotics for immunity.'},growing:{name:'BSC – Broiler Starter Crumble',form:'Crumble',cp:'20–21%',energy:'2950–3000 kcal/kg',desc:'Day 11–21. Builds bone and muscle, ensures uniform flock growth.'},adult:{name:'BGP – Broiler Grower Pellets',form:'Pellets',cp:'18–19%',energy:'3000–3100 kcal/kg',desc:'Day 22–30. Best FCR efficiency, rapid weight gain, lean muscle deposition.'},market:{name:'BF – Broiler Finisher Pellets',form:'Pellets',cp:'17–18%',energy:'3100–3200 kcal/kg',desc:'Day 31+ to market. Maximizes body weight, reduces excess fat, improves dressing%.'}},
+  layer:{young:{name:'Layer Chick Pre-Starter',form:'Crumble',cp:'20–21%',energy:'2850–2900 kcal/kg',desc:'0–4 week layer chicks. Rapid growth, strong immunity — foundation for lifetime productivity.'},growing:{name:'Layer Grower Phase 1–2',form:'Pellets',cp:'16–18%',energy:'2700–2800 kcal/kg',desc:'Weeks 9–16. Strong skeleton and body frame. Prevents stunted growth and overweight pullets.'},adult:{name:'Layer Phase 1 – Peak Production',form:'Pellets',cp:'17–18%',energy:'2700–2800 kcal/kg',desc:'Weeks 19–32. Maximum egg output, strong shells, excellent albumen quality.'},market:{name:'Layer Phase 2–3 – Sustained Laying',form:'Pellets',cp:'15–17%',energy:'2650–2800 kcal/kg',desc:'Weeks 33+. Sustains consistent production, extends profitable laying life.'}},
+  cattle:{young:{name:'Calf Starter Pellets',form:'Pellets',cp:'18–20%',energy:'High energy',desc:'0–3 months. Develops rumen, builds immunity. Strong calves become strong adults.'},growing:{name:'Cattle Grower Feed',form:'Mash/Pellets',cp:'16–18%',energy:'2700–2900 kcal/kg',desc:'3–12 months. Bone and muscle development. Foundation for breeding or milk production.'},adult:{name:'Dairy Cow Pellets (Lactating)',form:'Dairy Pellets',cp:'16–18%',energy:'2700–2900 + bypass fat',desc:'Lactation phase. Maximizes milk litres and fat%. More yield, healthier cows.'},market:{name:'Cattle Fattening Feed',form:'High-energy mash',cp:'14–16%',energy:'High grain ration',desc:'Beef cattle. Rapid finish weight for market. Every extra kg = extra profit.'}},
+  goat:{young:{name:'Goat Kid Starter Pellets',form:'Pellets',cp:'18–20%',energy:'High protein',desc:'0–3 months. Builds rumen and immunity. Strong kids = higher survival and faster growth.'},growing:{name:'Goat Grower Feed',form:'Mash/Pellets',cp:'16–18%',energy:'2700–2900 kcal/kg',desc:'3–9 months. Body-building stage. Steady weight gain and strong frame.'},adult:{name:'Breeding / Lactating Goat Feed',form:'Concentrate + fodder',cp:'14–18%',energy:'2600–2900 kcal/kg',desc:'Adult does and bucks. Better fertility, more milk, healthier offspring.'},market:{name:'Goat Fattening Feed',form:'High-energy ration',cp:'Energy-rich',energy:'High grain ration',desc:'Market-ready goats. Fastest path to target weight and premium meat quality.'}},
+};
+
+// =============================================
+// STATE
+// =============================================
+let records=LS.get('srfeeds_records',{feed:[],eggs:[],milk:[],expense:[],mortality:[]});
+let calcHistory=LS.get('srfeeds_calc_hist',[]);
+let profitHistory=LS.get('srfeeds_profit_hist',[]);
+let notifications=LS.get('srfeeds_notifs',[
+  {id:1,title:'Welcome to SR FEEDS',msg:'Your complete offline farming companion is ready. Explore tools, guides and calculators.',time:'Just now',read:false},
+  {id:2,title:'Vaccination Reminder',msg:'Check your vaccination planner to mark completed doses and set upcoming reminders.',time:'Today',read:false},
+  {id:3,title:'Heat Alert',msg:'Temperature forecast above 35°C. Increase water frequency and check ventilation.',time:'Today',read:false},
+]);
+let vacDone=LS.get('srfeeds_vacdone',{});
+let catFilter='All';
+let curTrackerTab='feed';
+let wizStep=0, wizData={};
+let openModalStack=[];
+
+// =============================================
+// SPLASH + ONBOARDING
+// =============================================
+setTimeout(()=>{
+  document.getElementById('splash').style.opacity='0';
+  setTimeout(()=>{
+    document.getElementById('splash').style.display='none';
+    document.getElementById('onboarding').style.display='flex';
+    renderOb();
+  },700);
+},2500);
+
+function renderOb(){
+  const s=OB_SLIDES[obIdx];
+  document.getElementById('ob-content').innerHTML=`<div class="ob-icon-wrap">${s.ic}</div><div class="ob-title">${s.title}</div><div class="ob-desc">${s.desc}</div>`;
+  document.getElementById('ob-dots').innerHTML=OB_SLIDES.map((_,i)=>`<div class="ob-dot${i===obIdx?' active':''}"></div>`).join('');
+  document.getElementById('ob-next').textContent=obIdx===OB_SLIDES.length-1?'Get Started 🚀':'Next →';
+}
+function nextSlide(){if(obIdx<OB_SLIDES.length-1){obIdx++;renderOb();}else startApp();}
+function startApp(){
+  document.getElementById('onboarding').style.display='none';
+  document.getElementById('app').style.display='flex';
+  applyDark(LS.get('srf_dark',false));
+  document.getElementById('daily-tip').textContent=TIPS[Math.floor(Math.random()*TIPS.length)];
+  // Update hero greeting if user data exists
+  const ud=LS.get('srf_user');
+  if(ud){const hg=document.getElementById('home-greeting');if(hg)hg.textContent='Hello, '+ud.name.split(' ')[0]+' 👋';}
+  fetchWeather();
+  // Init academy
+  renderAcademy();updateTotalProgress();updateCatProgress();
+  // Init tracker (async)
+  initTracker();
+  // Init tools modals
+  initDiseases('All');
+  renderCatalog(PRODUCTS);
+  renderDealers(DEALERS);
+  renderDealerCats();
+  showVacTab('broiler',document.querySelector('#vac-tabs .tab'));
+  initWizard();
+  updateCalcStages();
+  updateProfitFields();
+  updateNotifBadge();
+  updateProfileStats();
+  renderNotifs();
+}
+
+// =============================================
+// NAVIGATION
+// =============================================
+function switchTab(tab,btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.bn-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('scr-'+tab).classList.add('active','fade-in');
+  btn.classList.add('active');
+  // Refresh data when switching to profile tab
+  if(tab==='profile'){updateProfileStats();}
+  if(tab==='tracker'){applyTrackerFilters();}
+  if(tab==='learn'){showLearnSection('academy');renderAcademy();updateTotalProgress();updateCatProgress();}
+}
+function goLearn(cat){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.bn-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('scr-learn').classList.add('active');
+  document.querySelectorAll('.bn-item')[1].classList.add('active');
+  acaCat=cat;showLearnSection('academy');renderAcademy();updateTotalProgress();updateCatProgress();
+}
+function setLearnTab(tab,el){goLearn(tab);}
+// Legacy renderLearn — replaced by interactive academy above
+function renderLearn(tab){goLearn(tab);}
+
+// =============================================
+// DISEASE GUIDE
+// =============================================
+let curDisCat='All';
+function initDiseases(cat){
+  curDisCat=cat||'All';
+  const cats=['All','Poultry','Cattle','Goat'];
+  document.getElementById('dis-cat-row').innerHTML=cats.map(c=>`<button class="dis-cat-btn${c===curDisCat?' active':''}" onclick="setDisCat('${c}',this)">${c}</button>`).join('');
+  renderDiseases(DISEASES);
+}
+function setDisCat(cat,el){
+  curDisCat=cat;
+  document.querySelectorAll('.dis-cat-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('dis-search').value='';
+  filterDiseases('');
+}
+function filterDiseases(q){
+  let list=DISEASES;
+  if(curDisCat!=='All') list=list.filter(d=>d.cat===curDisCat);
+  if(q) list=list.filter(d=>d.name.toLowerCase().includes(q.toLowerCase())||d.symptoms.toLowerCase().includes(q.toLowerCase())||d.sp.toLowerCase().includes(q.toLowerCase()));
+  renderDiseases(list);
+}
+function diseaseCardHTML(d){
+  const col={critical:'sev-critical',high:'sev-high',medium:'sev-medium'}[d.sev]||'sev-medium';
+  return `<div class="dis-card"><div class="dis-hd ${col}"><span class="dis-name">🦠 ${d.name}</span><span class="dis-sp">${d.sp}</span></div><div class="dis-body"><div style="font-size:12px;color:var(--text);margin-bottom:8px;line-height:1.5;"><strong>Symptoms:</strong> ${d.symptoms}</div><div class="dis-row"><div class="dis-chip"><b>Cause</b>${d.cause}</div><div class="dis-chip"><b>Prevention</b>${d.prev}</div></div><div class="dis-resp">🩺 <strong>Response:</strong> ${d.resp}</div></div></div>`;
+}
+function renderDiseases(list){
+  document.getElementById('dis-list').innerHTML=list.length?list.map(diseaseCardHTML).join(''):'<div class="empty-state"><div class="empty-ic">🔍</div><div class="empty-txt">No diseases found matching your search.</div></div>';
+}
+
+// =============================================
+// FEED CALCULATOR
+// =============================================
+function updateCalcStages(){
+  const sp=document.getElementById('c-species').value;
+  document.getElementById('c-stage').innerHTML=CALC_STAGES[sp].map((s,i)=>`<option value="${i}">${s.label}</option>`).join('');
+  document.getElementById('calc-res').style.display='none';
+  renderCalcHistory();
+}
+function calcFeed(){
+  const sp=document.getElementById('c-species').value;
+  const idx=parseInt(document.getElementById('c-stage').value);
+  const count=parseInt(document.getElementById('c-count').value)||0;
+  const price=parseFloat(document.getElementById('c-price').value)||0;
+  const wt=parseFloat(document.getElementById('c-weight').value)||0;
+  const s=CALC_STAGES[sp][idx];
+  if(!count){showToast('Please enter number of animals.');return;}
+  const totalUnit=s.rate*count;
+  const daily=s.unit==='kg'?totalUnit:totalUnit/1000;
+  const weekly=daily*7, monthly=daily*30;
+  const dailyCost=daily*price, monthlyCost=monthly*price;
+  const r=document.getElementById('calc-res');
+  r.style.display='block';
+  document.getElementById('cr-val').textContent=`${totalUnit}${s.unit}/day (${daily.toFixed(1)} kg)`;
+  let detail=`${count} animals × ${s.rate}${s.unit}/animal/day\nWeekly: ${weekly.toFixed(1)} kg  |  Monthly: ${monthly.toFixed(0)} kg`;
+  if(price>0) detail+=`\nDaily cost: ₹${dailyCost.toFixed(0)}  |  Monthly cost: ₹${monthlyCost.toFixed(0)}`;
+  if(wt>0) detail+=`\nFeed:body ratio: ${(s.rate/1000/wt*100).toFixed(1)}% of body weight`;
+  document.getElementById('cr-detail').textContent=detail;
+  document.getElementById('cr-grid').innerHTML=`<div class="cr-spec"><div class="cr-spec-lbl">Crude Protein</div><div class="cr-spec-val">${s.cp}</div></div><div class="cr-spec"><div class="cr-spec-lbl">Energy</div><div class="cr-spec-val">${s.energy}</div></div><div class="cr-spec"><div class="cr-spec-lbl">Lysine</div><div class="cr-spec-val">${s.lysine}</div></div><div class="cr-spec"><div class="cr-spec-lbl">Methionine</div><div class="cr-spec-val">${s.meth}</div></div>`;
+  // Save history
+  const hist={id:Date.now(),sp,stage:s.label,count,daily:daily.toFixed(1),monthly:monthly.toFixed(0),cost:price>0?`₹${monthlyCost.toFixed(0)}/mo`:'',date:new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short'})};
+  calcHistory.unshift(hist);if(calcHistory.length>10)calcHistory.pop();
+  LS.set('srfeeds_calc_hist',calcHistory);
+  updateProfileStats();
+  renderCalcHistory();
+}
+function renderCalcHistory(){
+  const el=document.getElementById('calc-history');
+  if(!calcHistory.length){el.innerHTML='';return;}
+  el.innerHTML=`<div class="calc-hist-title">Recent Calculations</div>`+calcHistory.slice(0,5).map(h=>`<div class="calc-hist-item"><div><div class="chi-lbl">${h.sp.toUpperCase()} – ${h.count} animals</div><div style="font-size:11px;color:var(--muted);">${h.stage} • ${h.date}</div></div><div style="text-align:right;"><div class="chi-val">${h.daily} kg/day</div><div style="font-size:10px;color:var(--gold3);">${h.cost}</div></div><button class="chi-del" onclick="deleteCalcHist(${h.id})">🗑</button></div>`).join('');
+}
+function deleteCalcHist(id){calcHistory=calcHistory.filter(h=>h.id!==id);LS.set('srfeeds_calc_hist',calcHistory);renderCalcHistory();}
+
+// =============================================
+// PROFIT ESTIMATOR
+// =============================================
+function updateProfitFields(){
+  const t=document.getElementById('p-type').value;
+  const cfg={
+    broiler:{l1:'Feed Cost/kg (₹)',l2:'Sale Price/kg live (₹)',l3:'Chick Cost (₹ each)',d1:'28',d2:'95',d3:'42',days:'42'},
+    layer:{l1:'Feed Cost/kg (₹)',l2:'Egg Price/100 eggs (₹)',l3:'Pullet Cost (₹ each)',d1:'22',d2:'550',d3:'180',days:'365'},
+    cattle:{l1:'Feed Cost/kg (₹)',l2:'Milk Price/litre (₹)',l3:'Cow Cost (₹ each)',d1:'18',d2:'55',d3:'35000',days:'305'},
+    goat:{l1:'Feed Cost/kg (₹)',l2:'Sale Price/kg live (₹)',l3:'Kid Cost (₹ each)',d1:'25',d2:'160',d3:'3500',days:'90'},
+  }[t];
+  document.getElementById('p-label1').textContent=cfg.l1;
+  document.getElementById('p-label2').textContent=cfg.l2;
+  document.getElementById('p-label3').textContent=cfg.l3;
+  document.getElementById('p-val1').value=cfg.d1;
+  document.getElementById('p-val2').value=cfg.d2;
+  document.getElementById('p-val3').value=cfg.d3;
+  document.getElementById('p-days').value=cfg.days;
+  document.getElementById('profit-res').style.display='none';
+}
+function calcProfit(){
+  const t=document.getElementById('p-type').value;
+  const n=parseInt(document.getElementById('p-count').value)||0;
+  const days=parseInt(document.getElementById('p-days').value)||42;
+  const fc=parseFloat(document.getElementById('p-val1').value)||0;
+  const sp=parseFloat(document.getElementById('p-val2').value)||0;
+  const pc=parseFloat(document.getElementById('p-val3').value)||0;
+  const overhead=parseFloat(document.getElementById('p-overhead').value)||0;
+  const mortPct=parseFloat(document.getElementById('p-mort').value)||4;
+  if(!n){showToast('Please enter number of animals.');return;}
+  let rows=[],net=0,totalRev=0,totalCost=0,bePrice=0;
+  if(t==='broiler'){
+    const mort=Math.round(n*mortPct/100),sold=n-mort,wt=1.8+(days-35)*0.05,finalWt=Math.max(1.5,Math.min(3.2,wt));
+    const fcr=1.7,feedKg=n*finalWt*fcr;
+    const rev=sold*finalWt*sp,feedCost=feedKg*fc,purchCost=n*pc,totalC=feedCost+purchCost+overhead;
+    net=rev-totalC;totalRev=rev;totalCost=totalC;
+    bePrice=totalC/(sold*finalWt);
+    rows=[['Birds purchased ('+n+')','→ Sold after '+mortPct+'% mortality: '+sold,''],['Avg final weight',''+finalWt.toFixed(1)+' kg/bird',''],['Total feed used',''+feedKg.toFixed(0)+' kg (FCR '+fcr+')',''],['Revenue ('+sold+'×'+finalWt.toFixed(1)+'kg×₹'+sp+')','₹'+Math.round(rev).toLocaleString('en-IN'),'pos'],['Feed Cost','₹'+Math.round(feedCost).toLocaleString('en-IN'),'neg'],['Chick Purchase','₹'+Math.round(purchCost).toLocaleString('en-IN'),'neg'],['Medicine & Labour','₹'+Math.round(overhead).toLocaleString('en-IN'),'neg']];
+  } else if(t==='layer'){
+    const eggsPerHen=Math.round(280*(days/365));
+    const rev=n*eggsPerHen*(sp/100),feedCost=n*(115/1000)*fc*days,purchCost=n*pc,totalC=feedCost+purchCost+overhead;
+    net=rev-totalC;totalRev=rev;totalCost=totalC;
+    bePrice=totalC/(n*eggsPerHen/100);
+    rows=[['Hens',''+n,''],['Total eggs ('+eggsPerHen+'/hen)',''+Math.round(n*eggsPerHen).toLocaleString('en-IN'),''],['Revenue','₹'+Math.round(rev).toLocaleString('en-IN'),'pos'],['Feed Cost ('+days+' days)','₹'+Math.round(feedCost).toLocaleString('en-IN'),'neg'],['Pullet Purchase','₹'+Math.round(purchCost).toLocaleString('en-IN'),'neg'],['Other Costs','₹'+Math.round(overhead).toLocaleString('en-IN'),'neg']];
+  } else if(t==='cattle'){
+    const litres=18;
+    const rev=n*litres*days*sp,feedCost=n*8*fc*days,purchCost=n*pc,totalC=feedCost+purchCost+overhead;
+    net=rev-totalC;totalRev=rev;totalCost=totalC;
+    bePrice=totalC/(n*litres*days);
+    rows=[['Cows',''+n,''],['Total milk ('+litres+'L/day×'+days+' days)',''+Math.round(n*litres*days).toLocaleString('en-IN')+' L',''],['Revenue','₹'+Math.round(rev).toLocaleString('en-IN'),'pos'],['Feed Cost','₹'+Math.round(feedCost).toLocaleString('en-IN'),'neg'],['Cow Cost','₹'+Math.round(purchCost).toLocaleString('en-IN'),'neg'],['Vet & Other Costs','₹'+Math.round(overhead).toLocaleString('en-IN'),'neg']];
+  } else {
+    const gain=0.12,startWt=15,finalWt=startWt+gain*days;
+    const mort=Math.round(n*mortPct/100),sold=n-mort;
+    const rev=sold*finalWt*sp,feedCost=n*1.0*fc*days,purchCost=n*pc,totalC=feedCost+purchCost+overhead;
+    net=rev-totalC;totalRev=rev;totalCost=totalC;
+    bePrice=totalC/(sold*finalWt);
+    rows=[['Goats',''+n+' → '+sold+' sold',''],['Final weight',''+finalWt.toFixed(1)+' kg/goat ('+days+' days)',''],['Revenue','₹'+Math.round(rev).toLocaleString('en-IN'),'pos'],['Feed Cost','₹'+Math.round(feedCost).toLocaleString('en-IN'),'neg'],['Kid Purchase','₹'+Math.round(purchCost).toLocaleString('en-IN'),'neg'],['Other Costs','₹'+Math.round(overhead).toLocaleString('en-IN'),'neg']];
+  }
+  const r=document.getElementById('profit-res');r.style.display='block';
+  document.getElementById('pr-main').textContent='₹'+(net<0?'−':'')+Math.abs(Math.round(net)).toLocaleString('en-IN');
+  document.getElementById('pr-main').style.color=net>=0?'var(--gold2)':'#ff8080';
+  document.getElementById('pr-breakdown').innerHTML=rows.map(([l,v,c])=>`<div class="pr-row"><span class="pr-row-lbl">${l}</span><span class="pr-row-val ${c}">${v}</span></div>`).join('');
+  const margin=totalRev>0?((net/totalRev)*100).toFixed(1):0;
+  document.getElementById('pr-be').innerHTML=`💡 Break-even selling price: <strong>₹${bePrice.toFixed(2)}/unit</strong>  |  Margin: <strong>${margin}%</strong>  |  ROI: <strong>${totalCost>0?((net/totalCost)*100).toFixed(0):0}%</strong>`;
+  // Save history
+  const hist={id:Date.now(),type:t,n,net:Math.round(net),date:new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short'})};
+  profitHistory.unshift(hist);if(profitHistory.length>10)profitHistory.pop();
+  LS.set('srfeeds_profit_hist',profitHistory);
+  renderProfitHistory();
+}
+function renderProfitHistory(){
+  const el=document.getElementById('profit-history');
+  if(!profitHistory.length){el.innerHTML='';return;}
+  el.innerHTML=`<div class="calc-hist-title">Recent Estimates</div>`+profitHistory.slice(0,5).map(h=>`<div class="calc-hist-item"><div><div class="chi-lbl">${h.type.toUpperCase()} – ${h.n} animals</div><div style="font-size:11px;color:var(--muted);">${h.date}</div></div><div class="chi-val" style="color:${h.net>=0?'var(--g3)':'#e55'};">${h.net>=0?'+':''}₹${Math.abs(h.net).toLocaleString('en-IN')}</div><button class="chi-del" onclick="deleteProfitHist(${h.id})">🗑</button></div>`).join('');
+}
+function deleteProfitHist(id){profitHistory=profitHistory.filter(h=>h.id!==id);LS.set('srfeeds_profit_hist',profitHistory);renderProfitHistory();}
+
+// =============================================
+// VACCINATION PLANNER
+// =============================================
+let curVacSp='broiler';
+function showVacTab(sp,el){
+  curVacSp=sp;
+  if(el){document.querySelectorAll('#vac-tabs .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');}
+  renderVac(sp);
+}
+function renderVac(sp){
+  document.getElementById('vac-body').innerHTML=VACCINES[sp].map((v,i)=>{
+    const done=vacDone[v.key]||false;
+    return `<div class="vac-item${done?' done':''}" id="vitem_${v.key}">
+      <div class="vac-num${done?' done-num':''}">${done?'✓':(i+1)}</div>
+      <div class="vac-info">
+        <div class="vac-name">${v.v}</div>
+        <div class="vac-day">${v.day}</div>
+        <div class="vac-route">${v.route}</div>
+        <span class="vac-reminder-btn" onclick="setVacReminder('${v.key}','${v.v.replace(/'/g,'\\\'').substring(0,40)}')">🔔 Set Reminder</span>
+      </div>
+      <button class="vac-check${done?' done-check':''}" onclick="toggleVacDone('${v.key}')" title="${done?'Mark pending':'Mark done'}">${done?'✓':''}</button>
+    </div>`;
+  }).join('');
+}
+function toggleVacDone(key){
+  vacDone[key]=!vacDone[key];
+  LS.set('srfeeds_vacdone',vacDone);
+  renderVac(curVacSp);
+  if(vacDone[key]) addNotif('Vaccination Completed ✅','Marked as done. Great job keeping your flock healthy!');
+}
+function setVacReminder(key,name){
+  if('Notification' in window){
+    Notification.requestPermission().then(p=>{
+      if(p==='granted'){
+        new Notification('SR FEEDS Vaccination Reminder',{body:'Upcoming: '+name,icon:'',tag:'vac_'+key});
+        addNotif('🔔 Reminder Set',name+' – Reminder registered. You will be notified.');
+        showToast('Reminder set for: '+name.substring(0,30));
+      } else {
+        addNotif('🔔 Reminder Saved',name+' – Reminder saved locally (browser notifications not enabled).');
+        showToast('Reminder saved locally');
+      }
+    });
+  } else {
+    addNotif('🔔 Reminder Saved',name+' – Reminder saved locally.');
+    showToast('Reminder saved locally');
+  }
+}
+
+// =============================================
+// PRODUCT CATALOG
+// =============================================
+function setCatFilter(f,el){
+  catFilter=f;
+  document.querySelectorAll('#cat-filter-tabs .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  const q=document.getElementById('catalog-search').value;
+  filterCatalog(q);
+}
+function filterCatalog(q){
+  let list=PRODUCTS;
+  if(catFilter!=='All') list=list.filter(p=>p.type===catFilter);
+  if(q) list=list.filter(p=>p.name.toLowerCase().includes(q.toLowerCase())||p.type.toLowerCase().includes(q.toLowerCase())||p.age.toLowerCase().includes(q.toLowerCase())||p.use.toLowerCase().includes(q.toLowerCase()));
+  renderCatalog(list);
+}
+function renderCatalog(list){
+  document.getElementById('catalog-body').innerHTML=list.length?list.map(p=>`
+    <div class="cat-card">
+      <div class="cat-hd"><div class="cat-bag">${p.icon}</div><div class="cat-info"><div class="cat-nm">${p.name}</div><div class="cat-type">${p.type} • ${p.form} • ${p.age}</div></div></div>
+      <div class="cat-body">
+        <div class="cat-specs">
+          <div class="cat-sp"><div class="cat-sp-lbl">Crude Protein</div><div class="cat-sp-val">${p.cp}%</div></div>
+          <div class="cat-sp"><div class="cat-sp-lbl">ME (kcal/kg)</div><div class="cat-sp-val">${p.energy}</div></div>
+          <div class="cat-sp"><div class="cat-sp-lbl">Lysine</div><div class="cat-sp-val">${p.ly}</div></div>
+          <div class="cat-sp"><div class="cat-sp-lbl">Methionine</div><div class="cat-sp-val">${p.me}</div></div>
+          <div class="cat-sp"><div class="cat-sp-lbl">Calcium</div><div class="cat-sp-val">${p.ca}</div></div>
+          <div class="cat-sp"><div class="cat-sp-lbl">Avail. Phosphorus</div><div class="cat-sp-val">${p.p}</div></div>
+        </div>
+        <div style="background:var(--accent);border-radius:8px;padding:8px 10px;margin-top:8px;font-size:11px;color:var(--g1);line-height:1.5;"><strong>Usage:</strong> ${p.use}</div>
+      </div>
+    </div>`).join('')
+  :'<div class="empty-state"><div class="empty-ic">📦</div><div class="empty-txt">No products found.</div></div>';
+}
+
+// =============================================
+// DEALER LOCATOR
+// =============================================
+let dealerCatFilter='All';
+function renderDealerCats(){
+  const cats=['All','Headquarters','Authorized Dealer','Distributor','Dealer'];
+  document.getElementById('dealer-cat-row').innerHTML=cats.map(c=>`<button class="dis-cat-btn${c==='All'?' active':''}" onclick="setDealerCat('${c}',this)">${c}</button>`).join('');
+  renderDealers(DEALERS);
+}
+function setDealerCat(cat,el){
+  dealerCatFilter=cat;
+  document.querySelectorAll('#dealer-cat-row .dis-cat-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('dealer-search').value='';
+  filterDealers('');
+}
+function filterDealers(q){
+  let list=DEALERS;
+  if(dealerCatFilter!=='All') list=list.filter(d=>d.type===dealerCatFilter);
+  if(q) list=list.filter(d=>d.name.toLowerCase().includes(q.toLowerCase())||d.loc.toLowerCase().includes(q.toLowerCase())||d.city.toLowerCase().includes(q.toLowerCase())||d.type.toLowerCase().includes(q.toLowerCase()));
+  renderDealers(list);
+}
+function renderDealers(list){
+  document.getElementById('dealer-body').innerHTML=
+    `<div style="background:var(--accent);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--g1);">📍 ${list.length} dealer${list.length!==1?'s':''} found. Call ahead to confirm stock availability.</div>`+
+    (list.length?list.map(d=>`<div class="dealer-item"><div class="dealer-nm">${d.name}</div><div class="dealer-loc">📍 ${d.loc}</div><span class="dealer-type">${d.type}</span><div class="dealer-phone" onclick="window.open('tel:${d.phone}')">📞 ${d.phone}</div></div>`).join('')
+    :'<div class="empty-state"><div class="empty-ic">📍</div><div class="empty-txt">No dealers found.</div></div>');
+}
+
+// =============================================
+// SMART FEED WIZARD (4-step)
+// =============================================
+function initWizard(){wizStep=0;wizData={};document.getElementById('wiz-content').innerHTML=renderWizStep();}
+function renderWizStep(){
+  if(wizStep>=WIZ_STEPS.length) return renderWizResult();
+  const s=WIZ_STEPS[wizStep];
+  const prog=WIZ_STEPS.map((_,i)=>`<div class="wz-prog-dot${i<wizStep?' done':i===wizStep?' active':''}"></div>`).join('');
+  return `<div class="wz-step"><div class="wz-progress">${prog}</div><div class="wz-title">${s.title}</div><div class="wz-sub">${s.sub}</div><div class="wz-opts">${s.opts.map(o=>`<div class="wz-opt" onclick="wizPick('${s.key}','${o.val}')"><div class="wz-opt-ic">${o.ic}</div><div class="wz-opt-lbl">${o.lbl}</div></div>`).join('')}</div></div>`;
+}
+function wizPick(k,v){wizData[k]=v;wizStep++;document.getElementById('wiz-content').innerHTML=renderWizStep();}
+function renderWizResult(){
+  const sp=wizData.species||'broiler',age=wizData.age||'young',budget=wizData.budget||'any';
+  const rec=WIZ_RECS[sp]?.[age];
+  if(!rec) return '<div class="empty-state"><div class="empty-ic">🤔</div><div class="empty-txt">Please restart and complete all steps.</div></div>';
+  const budgetNote=budget==='economy'?'💡 Economy tip: Buy in larger quantities to reduce per-kg cost.':budget==='standard'?'✅ Standard range: Best balance of cost and performance.':budget==='premium'?'⭐ Premium choice: Maximum performance and health outcomes.':'ℹ️ Contact our team for best price based on your volume.';
+  return `<div class="wz-result"><div class="wz-res-chip">✅ ${sp.toUpperCase()} • ${age.toUpperCase()} STAGE</div><div class="wz-rec-name">${rec.name}</div><div class="wz-rec-spec">${rec.desc}</div><div class="wz-res-row"><span class="wz-res-k">Feed Form</span><span class="wz-res-v">${rec.form}</span></div><div class="wz-res-row"><span class="wz-res-k">Crude Protein</span><span class="wz-res-v">${rec.cp}</span></div><div class="wz-res-row"><span class="wz-res-k">Energy</span><span class="wz-res-v">${rec.energy}</span></div><div class="wz-res-row"><span class="wz-res-k">Budget Fit</span><span class="wz-res-v">${budget.toUpperCase()}</span></div><div style="margin-top:12px;background:rgba(201,162,39,.1);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--gold2);line-height:1.6;">${budgetNote}</div><div style="margin-top:10px;background:rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;font-size:11px;color:rgba(255,255,255,.6);line-height:1.6;">📞 Contact SR Feeds for purchase & technical guidance:<br/><strong style="color:var(--gold2);">+91 98765 43210</strong></div><button class="wz-restart" onclick="initWizard()">↩ Start Over</button></div>`;
+}
+
+// =============================================
+// TRACKER — see full implementation above (initTracker, renderTrackerCatTabs, etc.)
+// Legacy stubs for any remaining references:
+function setTrackerTab(tab,el){setTrackerCat(tab);}
+function renderTrackerRecs(){applyTrackerFilters();}
+function openAddRecord(){openTrackerAddSheet();}
+function saveRec(){saveTrRecord();}
+
+// =============================================
+// WEATHER
+// =============================================
+async function fetchWeather(){
+  document.getElementById('wc-desc').textContent='Fetching weather...';
+  try{
+    const res=await fetch('https://api.open-meteo.com/v1/forecast?latitude=17.33&longitude=76.82&current_weather=true');
+    const d=await res.json();const w=d.current_weather;
+    const icons={0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',61:'🌧️',80:'🌦️',95:'⛈️'};
+    const descs={0:'Clear sky',1:'Mostly clear',2:'Partly cloudy',3:'Overcast',45:'Foggy',61:'Light rain',80:'Rain showers',95:'Thunderstorm'};
+    document.getElementById('wc-temp').textContent=Math.round(w.temperature)+'°C';
+    document.getElementById('wc-icon').textContent=icons[w.weathercode]||'⛅';
+    document.getElementById('wc-desc').textContent=descs[w.weathercode]||'Weather updated';
+    document.getElementById('wc-sub').textContent='Kalaburagi, Karnataka • Live';
+    const heatAlert=document.getElementById('heat-alert');
+    if(w.temperature>34){heatAlert.style.display='flex';}else{heatAlert.style.display='none';}
+  }catch(e){
+    document.getElementById('wc-temp').textContent='--°C';
+    document.getElementById('wc-desc').textContent='Offline – weather unavailable';
+  }
+}
+
+// =============================================
+// NOTIFICATIONS
+// =============================================
+function addNotif(title,msg){
+  const n={id:Date.now(),title,msg,time:'Just now',read:false};
+  notifications.unshift(n);if(notifications.length>20)notifications.pop();
+  LS.set('srfeeds_notifs',notifications);
+  updateNotifBadge();
+  renderNotifs();
+}
+function updateNotifBadge(){
+  const unread=notifications.filter(n=>!n.read).length;
+  const badge=document.getElementById('notif-badge');
+  badge.style.display=unread>0?'block':'none';
+}
+function renderNotifs(){
+  const el=document.getElementById('notif-list');
+  if(!notifications.length){el.innerHTML='<div class="empty-state"><div class="empty-ic">🔔</div><div class="empty-txt">No notifications yet.</div></div>';return;}
+  el.innerHTML=notifications.map(n=>`<div class="notif-item" onclick="markNotifRead(${n.id})"><div class="notif-dot ${n.read?'read':'unread'}"></div><div class="notif-body"><div class="notif-title">${n.title}</div><div class="notif-msg">${n.msg}</div><div class="notif-time">${n.time}</div></div></div>`).join('');
+}
+function markNotifRead(id){
+  notifications=notifications.map(n=>n.id===id?{...n,read:true}:n);
+  LS.set('srfeeds_notifs',notifications);
+  updateNotifBadge();
+  renderNotifs();
+}
+function clearNotifs(){
+  notifications=[];LS.del('srfeeds_notifs');
+  updateNotifBadge();renderNotifs();
+}
+function toggleNotifPref(){
+  const tog=document.getElementById('notif-tog');
+  tog.classList.toggle('on');
+  const enabled=tog.classList.contains('on');
+  LS.set('srfeeds_notif_pref',enabled);
+  if(enabled && 'Notification' in window) Notification.requestPermission();
+  showToast('Notifications '+(enabled?'enabled':'disabled'));
+}
+
+// =============================================
+// GLOBAL SEARCH
+// =============================================
+const SEARCH_IDX=[
+  {lbl:'Broiler Pre-Starter (BPS)',action(){closeModal('search-modal');goLearn('broiler')},cat:'Feed'},
+  {lbl:'Layer 8-Phase Program',action(){closeModal('search-modal');goLearn('layer')},cat:'Feed'},
+  {lbl:'Cattle Feed Stages',action(){closeModal('search-modal');goLearn('cattle')},cat:'Feed'},
+  {lbl:'Goat Feed Stages',action(){closeModal('search-modal');goLearn('goat')},cat:'Feed'},
+  {lbl:'Nutrition Tables',action(){closeModal('search-modal');goLearn('nutri')},cat:'Table'},
+  {lbl:'Feed Calculator',action(){closeModal('search-modal');openModal('calc-modal')},cat:'Tool'},
+  {lbl:'Profit Estimator',action(){closeModal('search-modal');openModal('profit-modal')},cat:'Tool'},
+  {lbl:'Disease Guide – All Diseases',action(){closeModal('search-modal');openModal('disease-modal')},cat:'Health'},
+  {lbl:'Vaccination Planner',action(){closeModal('search-modal');openModal('vaccine-modal')},cat:'Health'},
+  {lbl:'Product Catalog',action(){closeModal('search-modal');openModal('catalog-modal')},cat:'Products'},
+  {lbl:'Dealer Locator',action(){closeModal('search-modal');openModal('dealer-modal')},cat:'Contact'},
+  {lbl:'Feed Wizard',action(){closeModal('search-modal');openModal('wizard-modal')},cat:'Tool'},
+  {lbl:'FAQ',action(){closeModal('search-modal');goLearn('faq')},cat:'Help'},
+  {lbl:'Contact SR Feeds',action(){closeModal('search-modal');openModal('contact-modal')},cat:'Contact'},
+  ...DISEASES.map(d=>({lbl:d.name,action(){closeModal('search-modal');openModal('disease-modal')},cat:'Disease'})),
+  ...PRODUCTS.map(p=>({lbl:p.name,action(){closeModal('search-modal');openModal('catalog-modal')},cat:'Product'})),
+];
+function openSearchModal(){openModal('search-modal');setTimeout(()=>document.getElementById('main-search-inp').focus(),100);}
+function doSearch(q){
+  const el=document.getElementById('search-results');
+  if(!q){el.innerHTML='<div style="padding:12px 0;font-size:13px;color:var(--muted);">Type to search diseases, products, tools, FAQs...</div>';return;}
+  const hits=SEARCH_IDX.filter(s=>s.lbl.toLowerCase().includes(q.toLowerCase()));
+  if(!hits.length){el.innerHTML='<div style="padding:20px 0;text-align:center;color:var(--muted);font-size:13px;">No results. Try "broiler", "mastitis", or "calculator".</div>';return;}
+  el.innerHTML=hits.slice(0,15).map((h,i)=>`<div class="search-result-item" id="sr${i}"><span class="sri-lbl">${h.lbl}</span><span class="sri-cat">${h.cat}</span></div>`).join('');
+  hits.slice(0,15).forEach((h,i)=>{document.getElementById('sr'+i).onclick=()=>h.action();});
+}
+
+// =============================================
+// DARK MODE (REAL)
+// =============================================
+let _darkMode=LS.get('srf_dark',false);
+function applyDark(v){
+  _darkMode=v;
+  document.documentElement.setAttribute('data-theme',v?'dark':'light');
+  const tog=document.getElementById('dark-tog');
+  if(tog) tog.classList.toggle('on',v);
+  LS.set('srf_dark',v);
+}
+function toggleDark(){
+  applyDark(!_darkMode);
+  showToast('Theme: '+(_darkMode?'Dark':'Light'));
+}
+
+// =============================================
+// PHASE 2 — LEARNING ACADEMY (FULL)
+// =============================================
+const CURRICULUM={
+  broiler:{label:'Broiler Farming',icon:'🐓',desc:'Complete guide to commercial broiler production.',
+    modules:[
+      {id:'br1',title:'Broiler Basics & Setup',sub:'Farm prep & chick arrival',lessons:[
+        {title:'Broiler Housing Essentials',sub:'Space, ventilation, litter',content:[
+          {type:'data',heading:'Housing Standards',rows:[['Floor space','0.75–1.0 sq ft/bird'],['House width','Max 40 ft'],['Sidewall height','8–10 ft'],['Ventilation','Cross-flow east-west']]},
+          {type:'highlight',body:'Overcrowding is the #1 cause of poor FCR. Never compromise on space.'},
+          {type:'text',icon:'🌿',heading:'Litter Management',body:'Use 3–4 inches of dry paddy husk or rice hull. Replace wet litter immediately — ammonia causes respiratory disease.'},
+          {type:'tip',body:'Install 60–100W bulb per 200 sq ft for Day 1 brooding. Chicks huddling toward heat = too cold. Spreading away = too hot.'},
+        ]},
+        {title:'Chick Arrival & Brooding',sub:'First 7 days',content:[
+          {type:'data',heading:'Brooding Temperature',rows:[['Day 1–7','95°F / 35°C'],['Day 8–14','90°F / 32°C'],['Week 3','85°F / 29°C'],['Week 4+','80°F / 26°C']]},
+          {type:'highlight',body:'Water before feed on Day 1. Dehydration in the first 6 hours causes permanent gut damage.'},
+          {type:'warning',body:'Chick mortality in first 3 days is almost always: dehydration, chilling, overheating, or poor quality chicks.'},
+        ]},
+      ]},
+      {id:'br2',title:'Broiler Feeding Program',sub:'SR FEEDS 4-Stage nutrition',lessons:[
+        {title:'Pre-Starter & Starter (Day 1–21)',sub:'Critical early nutrition',content:[
+          {type:'data',heading:'BPS Pre-Starter – Day 1–10',rows:[['Crude Protein','21–23%'],['ME (kcal/kg)','2850–2950'],['Lysine','1.2%'],['Methionine','0.55%'],['Form','Crumble']]},
+          {type:'data',heading:'BSC Starter – Day 11–21',rows:[['Crude Protein','20–21%'],['ME (kcal/kg)','2950–3000'],['Form','Crumble']]},
+          {type:'tip',body:'Feeder space = feed intake uniformity. 2.5 cm per bird in starter phase. Inadequate space = non-uniform flock.'},
+        ]},
+        {title:'Grower & Finisher (Day 22+)',sub:'Maximum growth efficiency',content:[
+          {type:'data',heading:'BGP Grower – Day 22–30',rows:[['Crude Protein','18–19%'],['ME (kcal/kg)','3000–3100'],['Form','Pellets']]},
+          {type:'data',heading:'BF Finisher – Day 31+',rows:[['Crude Protein','17–18%'],['ME (kcal/kg)','3100–3200'],['Form','Pellets']]},
+          {type:'highlight',body:'Day 31+ birds should eat 150–160g/day. Drop below 130g = check water, feeder, disease, or heat stress.'},
+        ]},
+      ]},
+      {id:'br3',title:'Disease Prevention',sub:'Vaccination & biosecurity',lessons:[
+        {title:'Core Vaccination Protocol',sub:'ND, IBD, Marek\'s',content:[
+          {type:'data',heading:'Vaccine Schedule',rows:[['Day 1','Marek\'s – SC injection'],['Day 7','ND+IB – Eye drop'],['Day 14','Gumboro – Water'],['Day 21','ND Booster – Eye drop'],['Day 28','Gumboro Booster']]},
+          {type:'warning',body:'Never give vaccine to sick birds. Always vaccinate healthy flocks only.'},
+          {type:'highlight',body:'Newcastle Disease is the #1 killer of unvaccinated poultry. One missed vaccination on Day 7 can wipe out an entire flock.'},
+        ]},
+      ]},
+      {id:'br4',title:'Broiler Profitability',sub:'FCR, costs & market',lessons:[
+        {title:'Understanding FCR & Profit',sub:'The key number',content:[
+          {type:'data',heading:'FCR Benchmarks',rows:[['Excellent','1.55–1.65'],['Good','1.65–1.80'],['Average','1.80–1.95'],['Poor','> 2.0']]},
+          {type:'highlight',body:'On 1,000 broilers: improving FCR from 1.9 to 1.7 saves 200 kg of feed = ~₹5,600 profit per batch.'},
+          {type:'tip',body:'Track FCR weekly. Rising FCR = investigate immediately (disease, feed quality, or management issues).'},
+        ]},
+      ]},
+    ]},
+  layer:{label:'Layer Farming',icon:'🥚',desc:'8-phase nutrition for maximum egg production.',
+    modules:[
+      {id:'ly1',title:'Chick Management',sub:'Week 0–8',lessons:[
+        {title:'Chick Pre-Starter & Starter',sub:'Foundation for lifetime production',content:[
+          {type:'data',heading:'Phase 1: Pre-Starter – Week 0–4',rows:[['Crude Protein','20–21%'],['Energy','2850–2900 kcal/kg'],['Calcium','1.0%'],['Form','Crumble']]},
+          {type:'highlight',body:'First 4 weeks determine lifetime egg production. Never compromise on starter quality.'},
+          {type:'tip',body:'24 hours light on Day 1, reduce to 20 hours by Week 2. Do NOT increase light before Week 17.'},
+        ]},
+      ]},
+      {id:'ly2',title:'Pullet Growing Phase',sub:'Week 9–18',lessons:[
+        {title:'Pre-Layer Nutrition',sub:'Calcium loading',content:[
+          {type:'data',heading:'Phase 5: Pre-Layer – Week 17–18',rows:[['Crude Protein','16–17%'],['Calcium','1.8–2.0% ← Key'],['Purpose','Bone calcium loading']]},
+          {type:'highlight',body:'Pre-layer calcium builds bone reserves for eggshells. Hens that skip this phase never recover shell quality.'},
+          {type:'warning',body:'Do NOT give Layer feed before Week 17. High calcium (3.5%) before laying starts damages kidneys.'},
+        ]},
+      ]},
+      {id:'ly3',title:'Production Phases',sub:'Week 19 to end of lay',lessons:[
+        {title:'Layer Phase 1–3 Nutrition',sub:'Peak, mid, and late',content:[
+          {type:'data',heading:'Phase 6: Peak – Week 19–32',rows:[['Crude Protein','17–18%'],['Calcium','3.5–3.8%'],['Form','Pellets']]},
+          {type:'data',heading:'Phase 8: Late – Week 51+',rows:[['Crude Protein','15–16%'],['Calcium','4.0–4.2%'],['Form','Pellets']]},
+          {type:'highlight',body:'Calcium INCREASES as hens age. Older hens need 4.0–4.2% vs 3.5% at peak. Failing to increase = thin shells.'},
+          {type:'tip',body:'Target 280–310 eggs/hen/year. Drop below 75% in peak = investigate disease, lighting, or nutrition.'},
+        ]},
+      ]},
+    ]},
+  dairy:{label:'Dairy Cattle',icon:'🐄',desc:'Calf to lactation nutrition for maximum milk yield.',
+    modules:[
+      {id:'dc1',title:'Calf Management',sub:'Birth to first calving',lessons:[
+        {title:'Calf Nutrition & Colostrum',sub:'0–12 months',content:[
+          {type:'highlight',body:'Give 2–3 litres colostrum within 30 minutes of birth. 4–6 litres in first 12 hours. Cannot be replaced.'},
+          {type:'data',heading:'SR FEEDS Calf Starter',rows:[['Crude Protein','18–20%'],['Form','Pellets'],['Introduce','Day 7']]},
+          {type:'tip',body:'Early rumen development = higher lifetime milk yield. Start calf starter pellets at Day 7.'},
+        ]},
+      ]},
+      {id:'dc2',title:'Lactating Cow Nutrition',sub:'Maximizing milk',lessons:[
+        {title:'Dairy Cow Feeding',sub:'Bypass fat & peak yield',content:[
+          {type:'data',heading:'SR FEEDS Dairy Pellets',rows:[['Crude Protein','16–18%'],['Energy','2700–2900 + bypass fat'],['Feeding Rate','1 kg per 2.5–3 L milk above maintenance']]},
+          {type:'highlight',body:'A 20-litre cow needs 7–8 kg SR FEEDS Dairy Pellets daily. Water intake: 80–100 litres/day.'},
+        ]},
+      ]},
+    ]},
+  goat:{label:'Goat Farming',icon:'🐐',desc:'Kid management, nutrition, and breeding.',
+    modules:[
+      {id:'gt1',title:'Kid Management',sub:'Birth to 3 months',lessons:[
+        {title:'Kid Care & Starter',sub:'Building strong goats early',content:[
+          {type:'highlight',body:'Kids with colostrum within 1 hour have 40% lower mortality. Colostrum cannot be replaced.'},
+          {type:'data',heading:'SR FEEDS Goat Kid Starter',rows:[['Crude Protein','18–20%'],['Form','Pellets'],['Creep feed','From Day 10']]},
+        ]},
+      ]},
+      {id:'gt2',title:'Breeding & Nutrition',sub:'Reproductive efficiency',lessons:[
+        {title:'Doe Nutrition for Breeding',sub:'More kids, more milk',content:[
+          {type:'data',heading:'Feeding Rates',rows:[['Maintenance','0.8 kg/day'],['Late pregnancy','1.0–1.2 kg/day'],['Peak lactation','1.0–1.5 kg/day']]},
+          {type:'highlight',body:'Flushing: increase feed by 0.3 kg/day for 2–3 weeks before mating. More twins, more income.'},
+        ]},
+      ]},
+    ]},
+};
+
+const QUIZZES={
+  br1:[
+    {q:'What is recommended floor space per broiler?',opts:['0.25 sq ft','0.5 sq ft','0.75–1.0 sq ft','2.0 sq ft'],ans:2,exp:'0.75–1.0 sq ft. Overcrowding causes heat stress, poor FCR, and disease.'},
+    {q:'What should chicks receive FIRST on Day 1?',opts:['Feed pellets','Glucose + electrolyte water','Vaccines','Antibiotics'],ans:1,exp:'Water before feed. Dehydration in first 6 hours causes permanent gut damage.'},
+    {q:'Brooding temperature for Day 1–7 chicks?',opts:['75°F','85°F','95°F / 35°C','100°F'],ans:2,exp:'95°F (35°C) at chick level for first week. Reduce by 5°F each week.'},
+    {q:'Chicks huddling near heat source means?',opts:['Too hot','Too bright','Too cold','Hungry'],ans:2,exp:'Huddling = too cold. Spreading away from brooder = too hot.'},
+  ],
+  br2:[
+    {q:'BPS Pre-Starter is for which age?',opts:['Day 1–10','Day 11–21','Day 22–30','Day 31+'],ans:0,exp:'BPS (Day 1–10) in crumble form with 21–23% protein.'},
+    {q:'When to switch to Finisher feed?',opts:['Day 21','Day 28','Day 31','Day 42'],ans:2,exp:'Switch to BF Finisher at Day 31 for cost-optimal performance.'},
+    {q:'What is FCR?',opts:['Feed Cost Ratio','Feed Conversion Ratio','Flock Condition Rating','Feed Calcium Req'],ans:1,exp:'FCR = Feed Consumed ÷ Weight Gained. Lower = more profitable.'},
+  ],
+  br3:[
+    {q:'#1 killer of unvaccinated poultry in India?',opts:['Coccidiosis','Marek\'s','Newcastle Disease','Gumboro'],ans:2,exp:'Newcastle Disease (ND) kills entire unvaccinated flocks within 3 days.'},
+    {q:'What kills live vaccines in drinking water?',opts:['Heat','Chlorine','Cold water','Electrolytes'],ans:1,exp:'Chlorine kills live vaccine viruses. Use clean unchlorinated water.'},
+    {q:'All-in all-out means?',opts:['Buy all feed at once','No age mixing on one farm','Sell all birds at once','Use all vaccines at once'],ans:1,exp:'One age group per farm at a time — breaks disease transmission cycles.'},
+  ],
+  br4:[
+    {q:'Excellent broiler FCR target?',opts:['1.2–1.4','1.55–1.65','1.80–1.95','2.0+'],ans:1,exp:'1.55–1.65 is excellent. Above 2.0 indicates serious problems.'},
+    {q:'When to start tracking FCR?',opts:['Market age only','Weekly from Day 14','Monthly','When birds look sick'],ans:1,exp:'Weekly from Day 14. Rising FCR early = warning sign.'},
+  ],
+  ly1:[
+    {q:'Do NOT increase daylength before which week?',opts:['Week 4','Week 8','Week 17','Week 24'],ans:2,exp:'Lighting before Week 17 triggers early laying with small eggs permanently.'},
+  ],
+  ly2:[
+    {q:'Why is Pre-Layer feed critical?',opts:['Prevents Gumboro','Builds bone calcium for eggshells','Increases body weight','Reduces feed cost'],ans:1,exp:'Pre-layer (1.8–2.0% Ca) builds bone calcium for shell production.'},
+  ],
+  ly3:[
+    {q:'Why does calcium increase in late-lay hens?',opts:['They eat less','Shell gland efficiency declines','They lay more eggs','More body mass'],ans:1,exp:'Shell gland efficiency declines with age — older hens need 4.0–4.2% Ca.'},
+  ],
+  dc1:[
+    {q:'How much colostrum in first 12 hours?',opts:['1 litre','2 litres','4–6 litres','10 litres'],ans:2,exp:'4–6 litres in first 12 hours. Antibodies cannot be absorbed after 24 hours.'},
+  ],
+  dc2:[
+    {q:'How much water does a 20-litre cow drink?',opts:['20–30 L','40–50 L','80–100 L','120 L'],ans:2,exp:'80–100 litres/day. Water restriction = immediate milk drop.'},
+  ],
+  gt1:[
+    {q:'Kids receiving colostrum within 1 hr have __% lower mortality?',opts:['10%','20%','40%','60%'],ans:2,exp:'40% lower mortality. Colostrum provides antibodies, energy, and growth factors.'},
+  ],
+  gt2:[
+    {q:'What is "flushing" in goat breeding?',opts:['Cleaning breeding pen','Increasing feed 2–3 weeks before mating','Giving vitamins at mating','Separating males'],ans:1,exp:'Flushing = +0.3 kg/day for 2–3 weeks before mating. Boosts ovulation rate.'},
+  ],
+};
+
+const BADGE_DEFS=[
+  {id:'beginner',ic:'🌱',name:'Beginner',desc:'Complete first lesson'},
+  {id:'starter',ic:'📖',name:'Learner',desc:'Complete 3 lessons'},
+  {id:'quiz_master',ic:'🎯',name:'Quiz Master',desc:'Score 100% on a quiz'},
+  {id:'broiler_expert',ic:'🐓',name:'Broiler Expert',desc:'Complete all Broiler modules'},
+  {id:'layer_specialist',ic:'🥚',name:'Layer Specialist',desc:'Complete all Layer modules'},
+  {id:'dairy_champion',ic:'🥛',name:'Dairy Champion',desc:'Complete all Dairy modules'},
+  {id:'goat_expert',ic:'🐐',name:'Goat Expert',desc:'Complete all Goat modules'},
+  {id:'record_keeper',ic:'📋',name:'Record Keeper',desc:'Complete 5 quizzes'},
+  {id:'smart_farmer',ic:'🏆',name:'Smart Farmer',desc:'Earn 5 badges'},
+];
+
+// Academy state
+let acaProgress=LS.get('srf_academy',{completedLessons:{},completedQuizzes:{},scores:{},streak:0,lastStudy:null})||{completedLessons:{},completedQuizzes:{},scores:{},streak:0,lastStudy:null};
+let acaCat='broiler', acaModule=null, acaLesson=null, acaLessonIdx=0, acaPage=0;
+let quizData=null, quizIdx=0, quizAnswers=[];
+
+function saveAca(){LS.set('srf_academy',acaProgress);}
+
+function setAcademyCat(cat,el){
+  acaCat=cat;
+  document.querySelectorAll('.cat-tab').forEach(t=>{t.style.background='rgba(255,255,255,.08)';t.style.color='rgba(255,255,255,.6)';t.style.borderColor='rgba(255,255,255,.2)';});
+  if(el){el.style.background='var(--gold)';el.style.borderColor='var(--gold)';el.style.color='#fff';}
+  renderAcademy();updateCatProgress();
+}
+
+function switchToLearnFaq(){showLearnSection('faq');renderFaqView();}
+function closeFaqView(){showLearnSection('academy');}
+
+function showLearnSection(view){
+  document.getElementById('academy-view').style.display=view==='academy'?'block':'none';
+  document.getElementById('lesson-view').style.display=view==='lesson'?'flex':'none';
+  document.getElementById('quiz-view').style.display=view==='quiz'?'flex':'none';
+  document.getElementById('faq-view').style.display=view==='faq'?'flex':'none';
+}
+
+function renderAcademy(){
+  const body=document.getElementById('academy-body');
+  if(acaCat==='all'){
+    body.innerHTML=Object.entries(CURRICULUM).map(([k,cat])=>renderCatOverviewHTML(k,cat)).join('');
+    return;
+  }
+  const cat=CURRICULUM[acaCat];
+  if(!cat){body.innerHTML='';return;}
+  body.innerHTML=renderCatOverviewHTML(acaCat,cat)+cat.modules.map((m,i)=>renderModCardHTML(m,i)).join('');
+}
+
+function renderCatOverviewHTML(key,cat){
+  const allL=cat.modules.reduce((a,m)=>a+m.lessons.length,0);
+  const done=cat.modules.reduce((a,m)=>a+m.lessons.filter((_,li)=>isLessonDone(m.id,li)).length,0);
+  const quizDone=cat.modules.filter(m=>isQuizDone(m.id)).length;
+  return `<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;box-shadow:var(--shadow);">
+    <div style="padding:14px 16px;background:var(--g2);display:flex;justify-content:space-between;align-items:center;">
+      <span style="color:#fff;font-size:14px;font-weight:700;">${cat.icon} ${cat.label}</span>
+      <span style="background:rgba(201,162,39,.3);color:var(--gold2);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;">${done}/${allL} lessons</span>
+    </div>
+    <div style="padding:12px 16px;">
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:10px;">${cat.desc}</div>
+      <div style="display:flex;gap:8px;">
+        <div style="flex:1;background:var(--accent);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--g1);">${allL}</div><div style="font-size:9px;color:var(--muted);">Lessons</div></div>
+        <div style="flex:1;background:var(--accent);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--g1);">${cat.modules.length}</div><div style="font-size:9px;color:var(--muted);">Modules</div></div>
+        <div style="flex:1;background:var(--accent);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--g1);">${quizDone}</div><div style="font-size:9px;color:var(--muted);">Quizzes</div></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderModCardHTML(m,mi){
+  const done=m.lessons.every((_,li)=>isLessonDone(m.id,li));
+  const pct=Math.round(m.lessons.filter((_,li)=>isLessonDone(m.id,li)).length/m.lessons.length*100);
+  return `<div onclick="openModule('${m.id}')" style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;transition:.15s;">
+    <div style="padding:12px 14px;display:flex;align-items:center;gap:12px;">
+      <div style="width:32px;height:32px;border-radius:50%;background:${done?'var(--g3)':'var(--g2)'};color:${done?'#fff':'var(--gold2)'};font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${done?'✓':mi+1}</div>
+      <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--text);">${m.title}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">${m.sub} • ${m.lessons.length} lessons</div></div>
+      <div style="text-align:right;"><span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;background:${done?'var(--accent)':'var(--gold4)'};color:${done?'var(--g3)':'var(--gold3)'};">${done?'✓ Done':'Start'}</span><div style="width:60px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:4px;"><div style="height:100%;background:var(--g3);width:${pct}%;"></div></div></div>
+    </div>
+  </div>`;
+}
+
+function isLessonDone(modId,li){return !!(acaProgress.completedLessons[modId+'_'+li]);}
+function isQuizDone(modId){return !!(acaProgress.completedQuizzes[modId]);}
+function markLessonDone(modId,li){
+  const key=modId+'_'+li;
+  if(!acaProgress.completedLessons[key]){acaProgress.completedLessons[key]=true;acaProgress.lastStudy=new Date().toISOString();saveAca();updateStreak();}
+}
+function updateStreak(){
+  const last=acaProgress.lastStudy;
+  if(!last)return;
+  const diff=Math.floor((new Date()-new Date(last))/(1000*60*60*24));
+  if(diff===0){}else if(diff===1){acaProgress.streak=(acaProgress.streak||0)+1;}else{acaProgress.streak=1;}
+  saveAca();
+}
+function updateTotalProgress(){
+  const allL=Object.values(CURRICULUM).reduce((a,c)=>a+c.modules.reduce((b,m)=>b+m.lessons.length,0),0);
+  const done=Object.keys(acaProgress.completedLessons).length;
+  const pct=allL?Math.round(done/allL*100):0;
+  const el=document.getElementById('total-pct');if(el)el.textContent=pct+'%';
+}
+function updateCatProgress(){
+  const fill=document.getElementById('progress-fill');if(!fill)return;
+  if(acaCat==='all'){fill.style.width='0%';return;}
+  const cat=CURRICULUM[acaCat];if(!cat)return;
+  const allL=cat.modules.reduce((a,m)=>a+m.lessons.length,0);
+  const done=cat.modules.reduce((a,m)=>a+m.lessons.filter((_,li)=>isLessonDone(m.id,li)).length,0);
+  fill.style.width=(allL?Math.round(done/allL*100):0)+'%';
+}
+
+function openModule(modId){
+  const catKey=Object.keys(CURRICULUM).find(k=>CURRICULUM[k].modules.find(m=>m.id===modId));
+  if(!catKey)return;
+  acaModule=CURRICULUM[catKey].modules.find(m=>m.id===modId);
+  if(!acaModule)return;
+  acaCat=catKey;acaLessonIdx=0;acaPage=0;
+  showLearnSection('lesson');renderLesson();
+}
+
+function renderLesson(){
+  acaLesson=acaModule.lessons[acaLessonIdx];
+  document.getElementById('lv-title').textContent=acaLesson.title;
+  document.getElementById('lv-sub').textContent=CURRICULUM[acaCat].label+' • '+acaModule.title;
+  document.getElementById('lv-progress').innerHTML=acaLesson.content.map((_,i)=>`<div style="height:3px;flex:1;border-radius:2px;background:${i<acaPage?'var(--gold2)':i===acaPage?'var(--gold)':'rgba(255,255,255,.2)'};"></div>`).join('');
+  renderLessonPage();
+  const prev=document.getElementById('lv-prev');
+  const next=document.getElementById('lv-next');
+  prev.style.display=acaPage===0&&acaLessonIdx===0?'none':'block';
+  const isLastPage=acaPage===acaLesson.content.length-1;
+  const isLastLesson=acaLessonIdx===acaModule.lessons.length-1;
+  if(isLastPage&&isLastLesson&&QUIZZES[acaModule.id]){
+    next.textContent='Take Quiz 📝';next.style.background='linear-gradient(135deg,var(--gold3),var(--gold))';
+  } else {
+    next.textContent='Next ›';next.style.background='var(--g2)';
+  }
+}
+
+function renderLessonPage(){
+  const block=acaLesson.content[acaPage];
+  const body=document.getElementById('lv-body');
+  body.scrollTop=0;
+  const wrap=document.createElement('div');wrap.className='fade-in';
+  if(block.type==='text'){wrap.innerHTML=`<div style="font-size:10px;font-weight:800;color:var(--gold3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">${block.icon||'📝'} ${block.heading}</div><div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:var(--shadow);font-size:13px;color:var(--muted);line-height:1.7;">${block.body}</div>`;}
+  else if(block.type==='data'){wrap.innerHTML=`<div style="font-size:10px;font-weight:800;color:var(--gold3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">📊 ${block.heading}</div><div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:var(--shadow);">${block.rows.map(r=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bg);"><span style="font-size:12px;color:var(--muted);">${r[0]}</span><span style="font-size:12px;font-weight:700;color:var(--text);">${r[1]}</span></div>`).join('')}</div>`;}
+  else if(block.type==='highlight'){wrap.innerHTML=`<div style="background:var(--accent);border-left:3px solid var(--g3);border-radius:0 8px 8px 0;padding:10px 12px;font-size:12px;color:var(--g1);line-height:1.6;">✅ ${block.body}</div>`;}
+  else if(block.type==='warning'){wrap.innerHTML=`<div style="background:#fff8e6;border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:10px 12px;font-size:12px;color:#6b4c00;line-height:1.6;">⚠️ ${block.body}</div>`;}
+  else if(block.type==='tip'){wrap.innerHTML=`<div style="background:var(--g1);border-radius:12px;padding:12px 14px;"><div style="font-size:10px;font-weight:700;color:var(--gold2);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">💡 Pro Tip</div><div style="font-size:12px;color:rgba(255,255,255,.75);line-height:1.6;">${block.body}</div></div>`;}
+  body.innerHTML='';body.appendChild(wrap);
+}
+
+function lessonNav(dir){
+  const pages=acaLesson.content;
+  if(dir===1){
+    if(acaPage<pages.length-1){acaPage++;renderLesson();}
+    else if(acaLessonIdx<acaModule.lessons.length-1){markLessonDone(acaModule.id,acaLessonIdx);acaLessonIdx++;acaPage=0;renderLesson();}
+    else{markLessonDone(acaModule.id,acaLessonIdx);checkBadges();if(QUIZZES[acaModule.id])startQuiz(acaModule.id);else closeLessonView();}
+  } else {
+    if(acaPage>0){acaPage--;renderLesson();}
+    else if(acaLessonIdx>0){acaLessonIdx--;acaPage=acaModule.lessons[acaLessonIdx].content.length-1;renderLesson();}
+    else{closeLessonView();}
+  }
+}
+
+function closeLessonView(){showLearnSection('academy');renderAcademy();updateTotalProgress();updateCatProgress();}
+
+function startQuiz(modId){
+  quizData=QUIZZES[modId];if(!quizData){closeLessonView();return;}
+  quizIdx=0;quizAnswers=[];
+  showLearnSection('quiz');renderQuizQ();
+}
+
+function renderQuizQ(){
+  const q=quizData[quizIdx];
+  document.getElementById('quiz-q-num').textContent=`Question ${quizIdx+1} of ${quizData.length}`;
+  document.getElementById('quiz-q-txt').textContent=q.q;
+  document.getElementById('quiz-prog').innerHTML=quizData.map((_,i)=>`<div style="height:3px;flex:1;border-radius:2px;background:${i<quizIdx?(quizAnswers[i]?.correct?'#6ddb9a':'#ff8080'):i===quizIdx?'var(--gold)':'rgba(255,255,255,.2)'};"></div>`).join('');
+  const body=document.getElementById('quiz-body');
+  body.style.display='block';
+  document.getElementById('quiz-result').style.display='none';
+  body.innerHTML=`<div class="fade-in">`+q.opts.map((o,i)=>`<div class="quiz-opt" onclick="answerQuiz(${i})" id="qopt${i}" style="background:var(--card);border:2px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:10px;cursor:pointer;font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:10px;transition:.15s;"><span style="font-size:18px;width:24px;text-align:center;">${['A','B','C','D'][i]}</span>${o}</div>`).join('')+
+    `<div id="quiz-fb" style="border-radius:12px;padding:12px 14px;margin-top:4px;font-size:13px;line-height:1.5;display:none;"></div>
+    <button id="quiz-next-btn" onclick="nextQuizQ()" style="width:100%;margin-top:14px;background:var(--g2);color:#fff;border:none;padding:13px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;display:none;">${quizIdx===quizData.length-1?'See Results 🎉':'Next →'}</button>
+    </div>`;
+}
+
+function answerQuiz(i){
+  const q=quizData[quizIdx];
+  document.querySelectorAll('.quiz-opt').forEach(o=>o.style.pointerEvents='none');
+  const correct=i===q.ans;
+  quizAnswers[quizIdx]={chosen:i,correct};
+  document.getElementById('qopt'+i).style.borderColor=correct?'#22c55e':'#ef4444';
+  document.getElementById('qopt'+i).style.background=correct?'#f0fdf4':'#fef2f2';
+  if(!correct){document.getElementById('qopt'+q.ans).style.borderColor='#22c55e';document.getElementById('qopt'+q.ans).style.background='#f0fdf4';}
+  const fb=document.getElementById('quiz-fb');
+  fb.style.display='block';
+  fb.style.cssText+=(correct?';background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;':';background:#fef2f2;color:#991b1b;border:1px solid #fecaca;');
+  fb.textContent=(correct?'✅ Correct! ':'❌ Incorrect. ')+q.exp;
+  document.getElementById('quiz-next-btn').style.display='block';
+}
+
+function nextQuizQ(){if(quizIdx<quizData.length-1){quizIdx++;renderQuizQ();}else{showQuizResult();}}
+
+function showQuizResult(){
+  const correct=quizAnswers.filter(a=>a.correct).length;
+  const total=quizData.length;
+  const pct=Math.round(correct/total*100);
+  const pass=pct>=60;
+  if(!acaProgress.completedQuizzes[acaModule.id]||acaProgress.scores[acaModule.id]<pct){
+    acaProgress.completedQuizzes[acaModule.id]={done:true,score:pct,date:new Date().toISOString()};
+    acaProgress.scores[acaModule.id]=pct;saveAca();checkBadges();
+  }
+  document.getElementById('quiz-body').style.display='none';
+  const res=document.getElementById('quiz-result');
+  res.style.display='flex';res.style.flexDirection='column';res.style.alignItems='center';res.style.padding='24px';
+  res.innerHTML=`<div style="font-size:64px;margin-bottom:14px;">${pass?'🎉':'😔'}</div>
+    <div style="font-size:48px;font-weight:800;color:var(--g1);margin-bottom:4px;">${pct}%</div>
+    <div style="font-size:14px;color:var(--muted);margin-bottom:20px;">${correct} of ${total} correct — ${pass?'Passed!':'Keep learning & retry'}</div>
+    <div style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:14px;">
+      ${quizAnswers.map((a,i)=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bg);font-size:12px;"><span>${a.correct?'✅':'❌'} Q${i+1}</span><span style="color:${a.correct?'var(--g3)':'#e53e3e'};font-weight:700;">${quizData[i].opts[a.chosen]}</span></div>`).join('')}
+    </div>
+    <button onclick="closeLessonView();updateProfileStats();" style="width:100%;padding:13px;border-radius:12px;border:none;background:var(--g2);color:#fff;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px;">🏠 Back to Academy</button>
+    ${!pass?`<button onclick="startQuiz('${acaModule.id}')" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-weight:700;cursor:pointer;">↩ Retry Quiz</button>`:''}`;
+}
+
+function closeQuizView(){document.getElementById('quiz-body').style.display='block';showLearnSection('lesson');}
+
+function renderFaqView(){
+  document.getElementById('faq-body').innerHTML=FAQ.map((f,i)=>`<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;overflow:hidden;box-shadow:var(--shadow);">
+    <div onclick="toggleFaq(${i})" style="padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+      <span style="font-size:13px;font-weight:600;color:var(--g1);flex:1;line-height:1.4;">${f.q}</span>
+      <span id="faq-ic-${i}" style="font-size:16px;color:var(--muted);margin-left:8px;">+</span>
+    </div>
+    <div id="faq-a-${i}" style="display:none;padding:0 16px 14px;font-size:12px;color:var(--muted);line-height:1.7;border-top:1px solid var(--bg);white-space:pre-line;">${f.a}</div>
+  </div>`).join('');
+}
+function toggleFaq(i){
+  const a=document.getElementById('faq-a-'+i);
+  const ic=document.getElementById('faq-ic-'+i);
+  const open=a.style.display==='none';
+  a.style.display=open?'block':'none';
+  ic.textContent=open?'−':'+';
+}
+
+function checkBadges(){
+  const earned=LS.get('srf_badges',{})||{};
+  const done=Object.keys(acaProgress.completedLessons).length;
+  const quizDone=Object.keys(acaProgress.completedQuizzes).length;
+  const scores=Object.values(acaProgress.scores||{});
+  if(done>=1)earned.beginner=true;
+  if(done>=3)earned.starter=true;
+  if(scores.some(s=>s===100))earned.quiz_master=true;
+  if(quizDone>=5)earned.record_keeper=true;
+  const checkCat=(key,bid)=>{const cat=CURRICULUM[key];if(cat&&cat.modules.every(m=>m.lessons.every((_,li)=>isLessonDone(m.id,li))))earned[bid]=true;};
+  checkCat('broiler','broiler_expert');checkCat('layer','layer_specialist');checkCat('dairy','dairy_champion');checkCat('goat','goat_expert');
+  if(Object.keys(earned).length>=5)earned.smart_farmer=true;
+  LS.set('srf_badges',earned);
+}
+
+// =============================================
+// FULL TRACKER (10 CATEGORIES + IndexedDB)
+// =============================================
+const TR_CATS=[
+  {id:'feed',icon:'🌾',label:'Feed Log',color:'#e8f5ee'},
+  {id:'eggs',icon:'🥚',label:'Egg Production',color:'#fef9c3'},
+  {id:'milk',icon:'🥛',label:'Milk Production',color:'#eff6ff'},
+  {id:'expense',icon:'💰',label:'Expenses',color:'#fef2f2'},
+  {id:'mortality',icon:'📉',label:'Mortality',color:'#f3f4f6'},
+  {id:'vaccination',icon:'💉',label:'Vaccination',color:'#f0fdf4'},
+  {id:'medicine',icon:'💊',label:'Medicine',color:'#fdf4ff'},
+  {id:'weight',icon:'⚖️',label:'Weight',color:'#fff7ed'},
+  {id:'sales',icon:'🛒',label:'Sales',color:'#ecfdf5'},
+  {id:'notes',icon:'📝',label:'Notes',color:'#f8fafc'},
+];
+
+const TR_FORMS={
+  feed:[{id:'date',label:'Date',type:'date',required:true},{id:'feed_type',label:'Feed Product',type:'text',placeholder:'e.g. BGP Grower Pellets',required:true},{id:'quantity',label:'Quantity',type:'number',placeholder:'e.g. 50'},{id:'unit',label:'Unit',type:'select',options:['kg','g','bags','tonnes']},{id:'cost',label:'Cost (₹)',type:'number',placeholder:'e.g. 1400'},{id:'notes',label:'Notes',type:'textarea',placeholder:'Optional'}],
+  eggs:[{id:'date',label:'Date',type:'date',required:true},{id:'total_eggs',label:'Total Eggs',type:'number',placeholder:'e.g. 1820',required:true},{id:'broken_eggs',label:'Broken/Rejected',type:'number',placeholder:'e.g. 12'},{id:'sold_eggs',label:'Eggs Sold',type:'number',placeholder:'e.g. 1500'},{id:'sale_price',label:'Sale Price per 100 (₹)',type:'number',placeholder:'e.g. 550'},{id:'notes',label:'Notes',type:'textarea',placeholder:'Optional'}],
+  milk:[{id:'date',label:'Date',type:'date',required:true},{id:'liters',label:'Total Litres',type:'number',placeholder:'e.g. 45',required:true},{id:'morning_qty',label:'Morning (L)',type:'number'},{id:'evening_qty',label:'Evening (L)',type:'number'},{id:'rate',label:'Milk Rate (₹/L)',type:'number',placeholder:'e.g. 55'},{id:'notes',label:'Notes',type:'textarea',placeholder:'Optional'}],
+  expense:[{id:'date',label:'Date',type:'date',required:true},{id:'category',label:'Category',type:'select',options:['Feed Purchase','Medicine','Vaccines','Labour','Equipment','Electricity','Transport','Other']},{id:'amount',label:'Amount (₹)',type:'number',required:true},{id:'description',label:'Description',type:'text',placeholder:'e.g. 50kg Starter feed'},{id:'notes',label:'Notes',type:'textarea',placeholder:'Optional'}],
+  mortality:[{id:'date',label:'Date',type:'date',required:true},{id:'species',label:'Species',type:'text',placeholder:'e.g. Broiler, Layer, Cow'},{id:'count',label:'Count',type:'number',required:true},{id:'cause',label:'Probable Cause',type:'text',placeholder:'e.g. Heat stress, Disease'},{id:'notes',label:'Notes',type:'textarea',placeholder:'Optional'}],
+  vaccination:[{id:'date',label:'Date Administered',type:'date',required:true},{id:'vaccine_name',label:'Vaccine Name',type:'text',required:true},{id:'batch',label:'Batch No.',type:'text'},{id:'species',label:'Species',type:'text'},{id:'count',label:'Animals Count',type:'number'},{id:'route',label:'Route',type:'select',options:['Eye Drop','Drinking Water','Subcutaneous','Intramuscular','Wing Web','Nasal']},{id:'next_due',label:'Next Due',type:'date'},{id:'notes',label:'Notes',type:'textarea',placeholder:'Optional'}],
+  medicine:[{id:'date',label:'Date',type:'date',required:true},{id:'medicine',label:'Medicine Name',type:'text',required:true},{id:'dosage',label:'Dosage',type:'text'},{id:'duration',label:'Duration (Days)',type:'number'},{id:'species',label:'Species',type:'text'},{id:'count',label:'Animals Treated',type:'number'},{id:'notes',label:'Notes',type:'textarea'}],
+  weight:[{id:'date',label:'Date',type:'date',required:true},{id:'animal_group',label:'Animal Group/Batch',type:'text',required:true},{id:'avg_weight',label:'Avg Weight (kg)',type:'number',required:true},{id:'count',label:'Animals Weighed',type:'number'},{id:'min_weight',label:'Min Weight (kg)',type:'number'},{id:'max_weight',label:'Max Weight (kg)',type:'number'},{id:'notes',label:'Notes',type:'textarea'}],
+  sales:[{id:'date',label:'Date',type:'date',required:true},{id:'product',label:'Product Sold',type:'text',required:true},{id:'qty',label:'Quantity',type:'number',required:true},{id:'unit',label:'Unit',type:'select',options:['kg','litres','eggs','birds','head','pieces']},{id:'rate',label:'Rate (₹/unit)',type:'number'},{id:'buyer',label:'Buyer Name',type:'text'},{id:'notes',label:'Notes',type:'textarea'}],
+  notes:[{id:'date',label:'Date',type:'date',required:true},{id:'title',label:'Title',type:'text',required:true},{id:'category',label:'Category',type:'select',options:['Observation','Vet Visit','Market Info','Weather','General']},{id:'content',label:'Notes/Details',type:'textarea'}],
+};
+
+// IndexedDB + localStorage fallback
+let _db=null;
+async function openTrackerDB(){
+  return new Promise(res=>{
+    const req=indexedDB.open('srfeeds_v4',1);
+    req.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('records'))d.createObjectStore('records',{keyPath:'id',autoIncrement:true});};
+    req.onsuccess=e=>{_db=e.target.result;res(_db);};
+    req.onerror=()=>res(null);
+  });
+}
+async function dbGetAll2(){
+  if(_db)return new Promise(res=>{const r=_db.transaction('records','readonly').objectStore('records').getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>res([]);});
+  try{return JSON.parse(localStorage.getItem('srf_tracker_recs')||'[]');}catch{return [];}
+}
+async function dbAdd2(obj){
+  if(_db)return new Promise((res,rej)=>{const tx=_db.transaction('records','readwrite');const r=tx.objectStore('records').add(obj);r.onsuccess=()=>res(r.result);r.onerror=()=>rej();});
+  const arr=JSON.parse(localStorage.getItem('srf_tracker_recs')||'[]');obj.id=Date.now();arr.push(obj);localStorage.setItem('srf_tracker_recs',JSON.stringify(arr));return obj.id;
+}
+async function dbPut2(obj){
+  if(_db)return new Promise((res,rej)=>{const tx=_db.transaction('records','readwrite');const r=tx.objectStore('records').put(obj);r.onsuccess=()=>res();r.onerror=()=>rej();});
+  const arr=JSON.parse(localStorage.getItem('srf_tracker_recs')||'[]');const i=arr.findIndex(x=>x.id===obj.id);if(i>=0)arr[i]=obj;else arr.push(obj);localStorage.setItem('srf_tracker_recs',JSON.stringify(arr));
+}
+async function dbDel2(id){
+  if(_db)return new Promise(res=>{_db.transaction('records','readwrite').objectStore('records').delete(id).onsuccess=()=>res();});
+  let arr=JSON.parse(localStorage.getItem('srf_tracker_recs')||'[]');arr=arr.filter(x=>x.id!==id);localStorage.setItem('srf_tracker_recs',JSON.stringify(arr));
+}
+
+let trRecords=[];let trCat='all';let trEditId=null;let trAddCat='feed';
+
+async function initTracker(){
+  await openTrackerDB();
+  trRecords=await dbGetAll2();
+  renderTrackerCatTabs();updateTrackerDash();applyTrackerFilters();
+}
+
+function renderTrackerCatTabs(){
+  const counts={};trRecords.forEach(r=>counts[r.category]=(counts[r.category]||0)+1);
+  const total=trRecords.length;
+  let html=`<button class="ttab${trCat==='all'?' active':''}" onclick="setTrackerCat('all')" style="flex-shrink:0;">All (${total})</button>`;
+  html+=TR_CATS.map(c=>`<button class="ttab${trCat===c.id?' active':''}" onclick="setTrackerCat('${c.id}')" style="flex-shrink:0;">${c.icon} ${c.label} (${counts[c.id]||0})</button>`).join('');
+  const el=document.getElementById('tracker-cat-row');if(el)el.innerHTML=html;
+}
+
+function setTrackerCat(id){
+  trCat=id;
+  const c=TR_CATS.find(x=>x.id===id);
+  const title=document.getElementById('tr-section-title');if(title)title.textContent=id==='all'?'All Records':(c?c.icon+' '+c.label:'Records');
+  renderTrackerCatTabs();applyTrackerFilters();
+}
+
+function updateTrackerDash(){
+  const today=new Date().toISOString().split('T')[0];
+  const feedEl=document.getElementById('ds-feed');if(feedEl)feedEl.textContent=trRecords.filter(r=>r.category==='feed').length;
+  const todayEggs=trRecords.filter(r=>r.category==='eggs'&&r.data.date===today).reduce((s,r)=>s+(parseFloat(r.data.total_eggs)||0),0);
+  const eggsEl=document.getElementById('ds-eggs');if(eggsEl)eggsEl.textContent=todayEggs||0;
+  const totalExp=trRecords.filter(r=>r.category==='expense').reduce((s,r)=>s+(parseFloat(r.data.amount)||0),0);
+  const expEl=document.getElementById('ds-expense');if(expEl)expEl.textContent='₹'+(totalExp>=1000?Math.round(totalExp/1000)+'K':Math.round(totalExp));
+}
+
+function applyTrackerFilters(){
+  const q=(document.getElementById('tr-search')?.value||'').toLowerCase();
+  let list=trRecords;
+  if(trCat!=='all')list=list.filter(r=>r.category===trCat);
+  if(q)list=list.filter(r=>JSON.stringify(r.data).toLowerCase().includes(q)||r.category.includes(q));
+  list=[...list].sort((a,b)=>b.id-a.id);
+  const count=document.getElementById('tr-count');if(count)count.textContent=list.length+' record'+(list.length!==1?'s':'');
+  renderTrackerList(list);
+}
+
+function renderTrackerList(list){
+  const el=document.getElementById('rec-list');if(!el)return;
+  if(!list.length){const c=TR_CATS.find(x=>x.id===trCat);el.innerHTML=`<div style="text-align:center;padding:48px 20px;"><div style="font-size:52px;margin-bottom:14px;">${c?c.icon:'📋'}</div><div style="font-size:15px;font-weight:700;color:var(--g1);margin-bottom:6px;">No records yet</div><div style="font-size:13px;color:var(--muted);">Tap the + button to add your first ${c?c.label:'record'}.</div></div>`;return;}
+  el.innerHTML=list.map(r=>trRecCardHTML(r)).join('');
+}
+
+function trRecCardHTML(r){
+  const c=TR_CATS.find(x=>x.id===r.category)||{icon:'📋',label:'Record',color:'#f0f0f0'};
+  const title=getTrTitle(r);const value=getTrValue(r);const sub=getTrSub(r);
+  const dateStr=r.data.date?new Date(r.data.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}):'—';
+  return `<div onclick="viewTrRecord(${r.id})" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);cursor:pointer;transition:.15s;">
+    <div style="width:42px;height:42px;border-radius:10px;background:${c.color};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${c.icon}</div>
+    <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${title}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">${sub}</div></div>
+    <div style="text-align:right;flex-shrink:0;"><div style="font-size:14px;font-weight:700;color:var(--g2);">${value}</div><div style="font-size:10px;color:var(--muted);margin-top:2px;">${dateStr}</div></div>
+  </div>`;
+}
+
+function getTrTitle(r){const d=r.data;switch(r.category){case 'feed':return d.feed_type||'Feed Log';case 'eggs':return 'Egg Collection';case 'milk':return 'Milk Yield';case 'expense':return d.description||d.category||'Expense';case 'mortality':return (d.species||'Animals')+' — Mortality';case 'vaccination':return d.vaccine_name||'Vaccination';case 'medicine':return d.medicine||'Medicine Log';case 'weight':return d.animal_group||'Weight Record';case 'sales':return d.product||'Sales';case 'notes':return d.title||'Note';default:return 'Record';}}
+function getTrValue(r){const d=r.data;switch(r.category){case 'feed':return (d.quantity||'--')+(d.unit?' '+d.unit:'kg');case 'eggs':return (d.total_eggs||0)+' 🥚';case 'milk':return (d.liters||0)+' L';case 'expense':return '₹'+(d.amount||0);case 'mortality':return (d.count||0)+' 💀';case 'vaccination':return d.route||'Done';case 'medicine':return (d.duration||'?')+' days';case 'weight':return (d.avg_weight||0)+' kg';case 'sales':return '₹'+Math.round((d.qty||0)*(d.rate||0));case 'notes':return d.category||'Note';default:return '';}}
+function getTrSub(r){const d=r.data;switch(r.category){case 'feed':return 'Cost: ₹'+(d.cost||0);case 'eggs':return 'Broken: '+(d.broken_eggs||0)+' | Sold: '+(d.sold_eggs||0);case 'milk':return 'AM: '+(d.morning_qty||0)+'L | PM: '+(d.evening_qty||0)+'L';case 'expense':return d.category||'';case 'mortality':return 'Cause: '+(d.cause||'Unknown');case 'vaccination':return 'Batch: '+(d.batch||'—');case 'medicine':return 'Dosage: '+(d.dosage||'—');case 'weight':return 'Min: '+(d.min_weight||'—')+'kg Max: '+(d.max_weight||'—')+'kg';case 'sales':return (d.qty||0)+' '+(d.unit||'units')+' @ ₹'+(d.rate||0);case 'notes':return (d.content||'').substring(0,60);default:return '';}}
+
+function viewTrRecord(id){
+  const r=trRecords.find(x=>x.id===id);if(!r)return;
+  const c=TR_CATS.find(x=>x.id===r.category)||{icon:'📋',label:'Record',color:'#f0f0f0'};
+  const fields=TR_FORMS[r.category]||[];
+  const rows=fields.map(f=>{const v=r.data[f.id];if(!v&&v!==0)return '';return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bg);"><span style="font-size:12px;color:var(--muted);">${f.label}</span><span style="font-size:13px;font-weight:700;color:var(--g1);text-align:right;max-width:60%;">${f.type==='date'?new Date(v).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):v}</span></div>`;}).join('');
+  document.getElementById('view-rec-body').innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <div style="width:44px;height:44px;border-radius:10px;background:${c.color};display:flex;align-items:center;justify-content:center;font-size:24px;">${c.icon}</div>
+      <div><div style="font-size:16px;font-weight:700;color:var(--g1);">${getTrTitle(r)}</div><div style="font-size:11px;color:var(--muted);">${c.label} • ${r.data.date?new Date(r.data.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}):'—'}</div></div>
+    </div>
+    <div style="background:var(--bg);border-radius:12px;padding:4px 12px;margin-bottom:14px;">${rows||'<div style="padding:12px 0;color:var(--muted);font-size:13px;">No details recorded.</div>'}</div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="editTrRecord(${id})" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--accent);color:var(--g2);font-size:13px;font-weight:700;cursor:pointer;">✏️ Edit</button>
+      <button onclick="deleteTrRecord(${id})" style="flex:1;padding:12px;border-radius:10px;border:none;background:#fef2f2;color:#dc2626;font-size:13px;font-weight:700;cursor:pointer;">🗑️ Delete</button>
+    </div>`;
+  openModal('view-rec-modal');
+}
+
+function openTrackerAddSheet(presetCat){
+  trEditId=null;trAddCat=presetCat&&presetCat!=='all'?presetCat:'feed';
+  document.getElementById('addrec-title').textContent='Add Record';
+  renderTrCatPicker();renderTrAddForm();openModal('addrec-modal');
+}
+
+function editTrRecord(id){
+  const r=trRecords.find(x=>x.id===id);if(!r)return;
+  closeModal('view-rec-modal');trEditId=id;trAddCat=r.category;
+  document.getElementById('addrec-title').textContent='Edit Record';
+  const c=TR_CATS.find(x=>x.id===r.category);
+  document.getElementById('cat-picker-wrap').innerHTML=`<div style="margin-bottom:12px;"><span style="display:inline-block;font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;background:var(--accent);color:var(--g2);">${c?c.icon+' '+c.label:'Record'}</span></div>`;
+  renderTrAddForm(r.data);openModal('addrec-modal');
+}
+
+function renderTrCatPicker(){
+  document.getElementById('cat-picker-wrap').innerHTML=`<div style="margin-bottom:14px;"><div class="flabel">Record Type</div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;">${TR_CATS.map(c=>`<div onclick="selectTrCat('${c.id}')" id="cpick-${c.id}" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:12px;border:2px solid ${trAddCat===c.id?'var(--g3)':'var(--border)'};background:${trAddCat===c.id?'var(--accent)':'var(--bg)'};cursor:pointer;"><div style="font-size:20px;">${c.icon}</div><div style="font-size:9px;font-weight:700;color:var(--muted);text-align:center;line-height:1.2;">${c.label}</div></div>`).join('')}</div></div>`;
+}
+
+function selectTrCat(id){
+  trAddCat=id;
+  TR_CATS.forEach(c=>{const el=document.getElementById('cpick-'+c.id);if(el){el.style.borderColor=c.id===id?'var(--g3)':'var(--border)';el.style.background=c.id===id?'var(--accent)':'var(--bg)';}});
+  renderTrAddForm();
+}
+
+function renderTrAddForm(prefill={}){
+  const fields=TR_FORMS[trAddCat]||[];
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('addrec-form').innerHTML=fields.map(f=>{
+    const val=prefill[f.id]!==undefined?prefill[f.id]:(f.type==='date'?today:'');
+    let inp=f.type==='select'?`<select class="fselect" id="af_${f.id}">${(f.options||[]).map(o=>`<option${val===o?' selected':''}>${o}</option>`).join('')}</select>`:
+      f.type==='textarea'?`<textarea class="finput" id="af_${f.id}" placeholder="${f.placeholder||''}" style="min-height:72px;resize:vertical;">${val}</textarea>`:
+      `<input class="finput" id="af_${f.id}" type="${f.type}" placeholder="${f.placeholder||''}" value="${val}"/>`;
+    return `<div class="frow"><label class="flabel">${f.label}${f.required?' <span style="color:#dc2626">*</span>':''}</label>${inp}</div>`;
+  }).join('')+`<button class="fcalc-btn" onclick="saveTrRecord()">${trEditId?'Update Record':'Save Record'}</button>`;
+}
+
+async function saveTrRecord(){
+  const fields=TR_FORMS[trAddCat]||[];
+  const data={};let valid=true;
+  fields.forEach(f=>{const el=document.getElementById('af_'+f.id);if(!el)return;const v=el.value.trim();if(f.required&&!v){el.style.borderColor='#dc2626';valid=false;}else{el.style.borderColor='';data[f.id]=v;}});
+  if(!valid){showToast('Please fill required fields');return;}
+  const rec={category:trAddCat,data,created:Date.now()};
+  if(trEditId){rec.id=trEditId;await dbPut2(rec);const i=trRecords.findIndex(r=>r.id===trEditId);if(i>=0)trRecords[i]=rec;}
+  else{const newId=await dbAdd2(rec);rec.id=newId;trRecords.push(rec);}
+  closeModal('addrec-modal');trEditId=null;
+  renderTrackerCatTabs();updateTrackerDash();applyTrackerFilters();
+  showToast(trEditId?'Record updated ✓':'Record saved ✓');
+}
+
+async function deleteTrRecord(id){
+  if(!confirm('Delete this record? Cannot be undone.'))return;
+  await dbDel2(id);trRecords=trRecords.filter(r=>r.id!==id);
+  closeModal('view-rec-modal');renderTrackerCatTabs();updateTrackerDash();applyTrackerFilters();
+  showToast('Record deleted');
+}
+
+function openExportSheet(){openModal('export-sheet');}
+
+function exportCSV(){
+  if(!trRecords.length){showToast('No records to export');return;}
+  let csv='Category,Date,Field,Value\n';
+  trRecords.forEach(r=>{const c=TR_CATS.find(x=>x.id===r.category)||{label:r.category};Object.entries(r.data).forEach(([k,v])=>{if(v)csv+=`"${c.label}","${r.data.date||''}","${k}","${String(v).replace(/"/g,'""')}"\n`;});});
+  dlFile('srfeeds_records_'+new Date().toISOString().split('T')[0]+'.csv',csv,'text/csv');
+  showToast('CSV exported ✓');
+}
+
+function exportJSON(){
+  if(!trRecords.length){showToast('No records to export');return;}
+  dlFile('srfeeds_backup_'+Date.now()+'.json',JSON.stringify({exported:new Date().toISOString(),records:trRecords},null,2),'application/json');
+  showToast('JSON backup exported ✓');
+}
+
+function dlFile(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();URL.revokeObjectURL(a.href);}
+
+// =============================================
+// PROFILE (FULL)
+// =============================================
+function updateProfileStats(){
+  // Learning
+  const allL=Object.values(CURRICULUM).reduce((a,c)=>a+c.modules.reduce((b,m)=>b+m.lessons.length,0),0);
+  const done=Object.keys(acaProgress.completedLessons).length;
+  const pct=allL?Math.round(done/allL*100):0;
+  const quizDone=Object.keys(acaProgress.completedQuizzes).length;
+  const earned=LS.get('srf_badges',{})||{};
+  const badgeCount=Object.keys(earned).length;
+  const streak=acaProgress.streak||0;
+
+  // Header stats
+  const ql=document.getElementById('qs-lessons');if(ql)ql.textContent=done;
+  const qb=document.getElementById('qs-badges');if(qb)qb.textContent=badgeCount;
+  const qr=document.getElementById('qs-records');if(qr)qr.textContent=trRecords.length;
+  const qs=document.getElementById('qs-streak');if(qs)qs.textContent=streak;
+
+  // Progress bar
+  const pp=document.getElementById('prof-pct');if(pp)pp.textContent=pct+'%';
+  const pb=document.getElementById('prof-prog-bar');if(pb)pb.style.width=pct+'%';
+  const pdl=document.getElementById('prof-done-lessons');if(pdl)pdl.textContent=done+'/'+allL;
+  const pdq=document.getElementById('prof-done-quizzes');if(pdq)pdq.textContent=quizDone;
+  const pds=document.getElementById('prof-streak');if(pds)pds.textContent=streak;
+
+  // Profile name/avatar from user data
+  const userData=LS.get('srf_user');
+  if(userData){
+    const nameEl=document.getElementById('prof-name');if(nameEl)nameEl.textContent=userData.name||'Farmer';
+    const typeEl=document.getElementById('prof-type');if(typeEl)typeEl.textContent=userData.farmerType||'SR FEEDS Member';
+    const avEl=document.getElementById('prof-av');
+    const farmerIcons={'Poultry Farmer':'🐓','Broiler Farmer':'🍗','Layer Farmer':'🥚','Dairy Farmer':'🐄','Goat Farmer':'🐐','Dealer':'🏪','Veterinary Staff':'👨‍⚕️'};
+    if(avEl)avEl.textContent=farmerIcons[userData.farmerType]||'🌾';
+    const sinceEl=document.getElementById('prof-since');
+    if(sinceEl&&userData.joinedAt)sinceEl.textContent='Member since '+new Date(userData.joinedAt).toLocaleDateString('en-IN',{month:'short',year:'numeric'});
+  }
+
+  // Badges grid
+  const bg=document.getElementById('prof-badges-grid');
+  if(bg)bg.innerHTML=BADGE_DEFS.map(b=>`<div style="background:var(--card);border:1px solid ${earned[b.id]?'var(--gold)':'var(--border)'};border-radius:12px;padding:12px 6px;text-align:center;box-shadow:var(--shadow);${!earned[b.id]?'opacity:.4;filter:grayscale(.8);':''}"><div style="font-size:26px;margin-bottom:4px;">${b.ic}</div><div style="font-size:9px;font-weight:700;color:${earned[b.id]?'var(--g2)':'var(--muted)'};line-height:1.2;">${b.name}</div></div>`).join('');
+
+  // Sync dark toggle
+  const tog=document.getElementById('dark-tog');if(tog)tog.classList.toggle('on',_darkMode);
+}
+
+function exportData(){
+  const data={trRecords,acaProgress,calcHistory,profitHistory,vacDone,notifications,exportDate:new Date().toISOString()};
+  dlFile('srfeeds_backup_'+Date.now()+'.json',JSON.stringify(data,null,2),'application/json');
+  showToast('Data exported successfully');
+}
+
+function clearAllData(){
+  if(confirm('Clear ALL app data including records, progress, and settings? Cannot be undone.')){
+    ['srf_tracker_recs','srf_academy','srf_badges','srfeeds_calc_hist','srfeeds_profit_hist','srfeeds_vacdone','srfeeds_notifs'].forEach(k=>{try{localStorage.removeItem(k);}catch{}});
+    trRecords=[];acaProgress={completedLessons:{},completedQuizzes:{},scores:{},streak:0,lastStudy:null};calcHistory=[];profitHistory=[];vacDone={};
+    notifications=[{id:Date.now(),title:'App Reset',msg:'All data cleared successfully.',time:'Just now',read:false}];
+    applyTrackerFilters();updateTrackerDash();renderTrackerCatTabs();updateNotifBadge();updateProfileStats();renderAcademy();
+    showToast('All data cleared');
+  }
+}
+
+// =============================================
+// MODAL SYSTEM + BACK NAVIGATION
+// =============================================
+function openModal(id){
+  document.getElementById(id).classList.add('open');
+  openModalStack.push(id);
+}
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+  openModalStack=openModalStack.filter(m=>m!==id);
+}
+function closeOut(e,id){if(e.target.id===id)closeModal(id);}
+
+// Back button: close top modal first, then navigate
+window.addEventListener('popstate',()=>{
+  if(openModalStack.length>0){
+    const top=openModalStack[openModalStack.length-1];
+    closeModal(top);
+    history.pushState(null,'',window.location.href);
+  }
+});
+// Push initial state so back is capturable
+history.pushState(null,'',window.location.href);
+
+// =============================================
+// TOAST
+// =============================================
+function showToast(msg){
+  let t=document.getElementById('_toast');
+  if(!t){t=document.createElement('div');t.id='_toast';Object.assign(t.style,{position:'fixed',bottom:'90px',left:'50%',transform:'translateX(-50%)',background:'rgba(10,53,32,.95)',color:'#fff',padding:'10px 20px',borderRadius:'30px',fontSize:'13px',fontWeight:'600',zIndex:'9999',transition:'opacity .3s',whiteSpace:'nowrap',boxShadow:'0 4px 20px rgba(0,0,0,.3)'});document.body.appendChild(t);}
+  t.textContent=msg;t.style.opacity='1';
+  clearTimeout(t._tmr);t._tmr=setTimeout(()=>t.style.opacity='0',2500);
+}
+</script>
+</body>
+</html>
