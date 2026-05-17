@@ -36,19 +36,18 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
 .splash-version{color:rgba(255,255,255,.3);font-size:11px;margin-top:20px;letter-spacing:1px;}
 
 /* ONBOARDING */
-#onboarding{position:fixed;inset:0;background:var(--g1);z-index:9998;display:none;flex-direction:column;align-items:stretch;}
-.ob-bg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;text-align:center;}
-.ob-icon-wrap{width:100px;height:100px;border-radius:50%;background:rgba(201,162,39,.15);border:2px solid rgba(201,162,39,.4);display:flex;align-items:center;justify-content:center;margin:0 auto 28px;font-size:48px;}
-.ob-title{color:#fff;font-size:26px;font-weight:700;margin-bottom:12px;line-height:1.3;}
-.ob-desc{color:rgba(255,255,255,.65);font-size:15px;line-height:1.7;max-width:300px;margin:0 auto;}
-.ob-bottom{padding:0 24px 48px;}
-.ob-dots{display:flex;gap:8px;justify-content:center;margin-bottom:28px;}
+#onboarding{position:fixed;inset:0;z-index:9998;display:none;overflow:hidden;}
+#ob-lang,#ob-slides,#ob-setup{position:absolute;inset:0;overflow-y:auto;}
+.lang-btn{width:100%;display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:16px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.07);cursor:pointer;transition:.15s;}
+.lang-btn:hover,.lang-btn:active{border-color:var(--gold);background:rgba(201,162,39,.12);}
+.ob-icon-wrap{width:110px;height:110px;border-radius:50%;background:rgba(201,162,39,.13);border:2px solid rgba(201,162,39,.4);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:52px;}
+.ob-title{color:#fff;font-size:24px;font-weight:800;margin-bottom:10px;line-height:1.3;text-align:center;}
+.ob-desc{color:rgba(255,255,255,.6);font-size:14px;line-height:1.75;max-width:300px;margin:0 auto;text-align:center;}
 .ob-dot{height:6px;border-radius:3px;background:rgba(255,255,255,.25);transition:.3s;}
-.ob-dot.active{width:28px;background:var(--gold);}
-.ob-dot:not(.active){width:6px;}
-.ob-actions{display:flex;gap:12px;}
-.btn-skip{flex:0 0 auto;padding:14px 22px;border-radius:50px;border:1px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.6);font-size:14px;cursor:pointer;}
-.btn-next{flex:1;padding:14px;border-radius:50px;border:none;background:linear-gradient(135deg,var(--gold3),var(--gold));color:#fff;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:.5px;}
+.ob-dot.active{background:var(--gold);}
+.type-btn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;border-radius:14px;border:2px solid var(--border);background:var(--card);cursor:pointer;font-size:22px;color:var(--text);font-weight:700;font-size:12px;text-align:center;transition:.15s;}
+.type-btn.selected{border-color:var(--g3);background:var(--accent);color:var(--g2);}
+
 
 /* MAIN */
 #app{display:none;flex-direction:column;min-height:100vh;padding-bottom:72px;}
@@ -387,15 +386,103 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
 </div>
 
 <!-- ONBOARDING -->
-<div id="onboarding">
-  <div class="ob-bg" id="ob-content"></div>
-  <div class="ob-bottom">
-    <div class="ob-dots" id="ob-dots"></div>
-    <div class="ob-actions">
-      <button class="btn-skip" onclick="startApp()">Skip</button>
-      <button class="btn-next" id="ob-next" onclick="nextSlide()">Next →</button>
+<div id="onboarding" style="display:none;">
+
+  <!-- STEP 1: LANGUAGE SELECTION -->
+  <div id="ob-lang" style="display:flex;flex-direction:column;min-height:100vh;background:linear-gradient(160deg,var(--g1) 0%,var(--g2) 55%,#1a6b42 100%);padding:0 24px 40px;align-items:center;justify-content:center;">
+    <div style="text-align:center;margin-bottom:40px;">
+      <div style="width:80px;height:80px;border-radius:50%;background:rgba(201,162,39,.15);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:36px;">🌾</div>
+      <div style="color:var(--gold2);font-size:11px;font-weight:700;letter-spacing:3px;margin-bottom:8px;">SR FEEDS</div>
+      <div style="color:#fff;font-size:26px;font-weight:800;line-height:1.2;">Choose Your<br/>Language</div>
+      <div style="color:rgba(255,255,255,.5);font-size:12px;margin-top:8px;">ಭಾಷೆ ಆಯ್ಕೆ ಮಾಡಿ / भाषा चुनें</div>
+    </div>
+    <div style="width:100%;display:flex;flex-direction:column;gap:12px;">
+      <button onclick="selectLang('en')" class="lang-btn" id="lang-en">
+        <span style="font-size:26px;">🇮🇳</span>
+        <div style="text-align:left;"><div style="font-size:16px;font-weight:700;color:#fff;">English</div><div style="font-size:11px;color:rgba(255,255,255,.5);">Continue in English</div></div>
+        <span style="margin-left:auto;font-size:20px;color:var(--gold2);">›</span>
+      </button>
+      <button onclick="selectLang('kn')" class="lang-btn" id="lang-kn">
+        <span style="font-size:26px;">🏡</span>
+        <div style="text-align:left;"><div style="font-size:16px;font-weight:700;color:#fff;">ಕನ್ನಡ</div><div style="font-size:11px;color:rgba(255,255,255,.5);">ಕನ್ನಡದಲ್ಲಿ ಮುಂದುವರಿಯಿರಿ</div></div>
+        <span style="margin-left:auto;font-size:20px;color:var(--gold2);">›</span>
+      </button>
+      <button onclick="selectLang('hi')" class="lang-btn" id="lang-hi">
+        <span style="font-size:26px;">🕌</span>
+        <div style="text-align:left;"><div style="font-size:16px;font-weight:700;color:#fff;">हिंदी</div><div style="font-size:11px;color:rgba(255,255,255,.5);">हिंदी में जारी रखें</div></div>
+        <span style="margin-left:auto;font-size:20px;color:var(--gold2);">›</span>
+      </button>
     </div>
   </div>
+
+  <!-- STEP 2: INTRO SLIDES -->
+  <div id="ob-slides" style="display:none;flex-direction:column;min-height:100vh;background:linear-gradient(160deg,var(--g1),var(--g2) 60%,#1a6b42);">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px 0;" id="ob-slide-body"></div>
+    <div style="padding:24px 24px 40px;">
+      <div style="display:flex;justify-content:center;gap:6px;margin-bottom:20px;" id="ob-dots2"></div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="obBack()" id="ob-back-btn" style="flex:0 0 48px;height:48px;border-radius:50%;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:18px;cursor:pointer;display:none;">‹</button>
+        <button onclick="obNext()" id="ob-fwd-btn" style="flex:1;height:48px;border-radius:50px;border:none;background:linear-gradient(135deg,var(--gold3),var(--gold2));color:var(--g1);font-size:14px;font-weight:800;cursor:pointer;letter-spacing:.5px;" id="ob-next2">NEXT →</button>
+      </div>
+      <button onclick="skipToSetup()" style="width:100%;margin-top:12px;background:none;border:none;color:rgba(255,255,255,.35);font-size:12px;cursor:pointer;padding:6px;" id="ob-skip-btn">Skip intro</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: USER DETAILS FORM -->
+  <div id="ob-setup" style="display:none;flex-direction:column;min-height:100vh;background:linear-gradient(160deg,var(--g1),var(--g2) 60%,#1a6b42);">
+    <div style="padding:40px 24px 20px;text-align:center;">
+      <div style="font-size:42px;margin-bottom:12px;">👨‍🌾</div>
+      <div style="color:var(--gold2);font-size:11px;font-weight:700;letter-spacing:2px;margin-bottom:6px;" id="setup-step-label">STEP 3 OF 3</div>
+      <div style="color:#fff;font-size:22px;font-weight:800;line-height:1.3;" id="setup-title">Tell us about yourself</div>
+      <div style="color:rgba(255,255,255,.5);font-size:12px;margin-top:6px;" id="setup-sub">We'll personalise the app for you</div>
+    </div>
+    <div style="flex:1;background:var(--bg);border-radius:24px 24px 0 0;padding:24px;overflow-y:auto;">
+      <!-- Name -->
+      <div style="margin-bottom:16px;">
+        <label style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;" id="lbl-name">Full Name *</label>
+        <input id="setup-name" type="text" placeholder="e.g. Rajesh Kumar" style="width:100%;margin-top:6px;padding:13px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:15px;font-weight:600;box-sizing:border-box;outline:none;" oninput="validateSetup()"/>
+      </div>
+      <!-- Phone -->
+      <div style="margin-bottom:16px;">
+        <label style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;" id="lbl-phone">Mobile Number</label>
+        <input id="setup-phone" type="tel" placeholder="e.g. 9876543210" maxlength="10" style="width:100%;margin-top:6px;padding:13px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:15px;font-weight:600;box-sizing:border-box;outline:none;"/>
+      </div>
+      <!-- Village / Location -->
+      <div style="margin-bottom:16px;">
+        <label style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;" id="lbl-village">Village / Town</label>
+        <input id="setup-village" type="text" placeholder="e.g. Aland, Kalaburagi" style="width:100%;margin-top:6px;padding:13px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:15px;font-weight:600;box-sizing:border-box;outline:none;"/>
+      </div>
+      <!-- Farmer Type -->
+      <div style="margin-bottom:16px;">
+        <label style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;" id="lbl-type">I am a... *</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;" id="farmer-type-grid">
+          <div class="type-btn" onclick="selectFarmerType('Poultry Farmer',this)">🐓<br/><span id="ft-poultry">Poultry Farmer</span></div>
+          <div class="type-btn" onclick="selectFarmerType('Broiler Farmer',this)">🍗<br/><span id="ft-broiler">Broiler Farmer</span></div>
+          <div class="type-btn" onclick="selectFarmerType('Layer Farmer',this)">🥚<br/><span id="ft-layer">Layer Farmer</span></div>
+          <div class="type-btn" onclick="selectFarmerType('Dairy Farmer',this)">🐄<br/><span id="ft-dairy">Dairy Farmer</span></div>
+          <div class="type-btn" onclick="selectFarmerType('Goat Farmer',this)">🐐<br/><span id="ft-goat">Goat Farmer</span></div>
+          <div class="type-btn" onclick="selectFarmerType('Dealer',this)">🏪<br/><span id="ft-dealer">Dealer</span></div>
+          <div class="type-btn" onclick="selectFarmerType('Veterinary Staff',this)">👨‍⚕️<br/><span id="ft-vet">Vet Staff</span></div>
+          <div class="type-btn" onclick="selectFarmerType('Other',this)">🌱<br/><span id="ft-other">Other</span></div>
+        </div>
+      </div>
+      <!-- Farm size -->
+      <div style="margin-bottom:20px;">
+        <label style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;" id="lbl-size">Farm / Flock Size</label>
+        <select id="setup-size" style="width:100%;margin-top:6px;padding:13px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font-size:14px;font-weight:600;box-sizing:border-box;outline:none;appearance:none;">
+          <option value="">— Select —</option>
+          <option>Small (below 500)</option>
+          <option>Medium (500 – 2000)</option>
+          <option>Large (2000 – 10,000)</option>
+          <option>Commercial (10,000+)</option>
+        </select>
+      </div>
+      <!-- Submit -->
+      <button id="setup-submit" onclick="submitSetup()" disabled style="width:100%;padding:15px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--g3),var(--g2));color:#fff;font-size:16px;font-weight:800;cursor:pointer;letter-spacing:.5px;opacity:.45;transition:opacity .2s;" id="lbl-submit">GET STARTED 🚀</button>
+      <div style="text-align:center;margin-top:10px;font-size:11px;color:var(--muted);">🔒 All data stays on your device only</div>
+    </div>
+  </div>
+
 </div>
 
 <!-- MAIN APP -->
@@ -611,6 +698,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
     <div class="sl-grp">
       <div class="sl-item"><div class="sl-icon">🌙</div><div class="sl-txt"><div class="sl-lbl">Dark Mode</div><div class="sl-sub">Toggle app theme</div></div><button class="sl-tog" id="dark-tog" onclick="toggleDark()"></button></div>
       <div class="sl-item"><div class="sl-icon">🔔</div><div class="sl-txt"><div class="sl-lbl">Notifications</div><div class="sl-sub">Farming alerts & reminders</div></div><button class="sl-tog on" id="notif-tog" onclick="toggleNotifPref()"></button></div>
+      <div class="sl-item" onclick="changeLanguage()"><div class="sl-icon">🌐</div><div class="sl-txt"><div class="sl-lbl">Language / ಭಾಷೆ / भाषा</div><div class="sl-sub" id="prof-lang-lbl">English</div></div><div class="sl-arr">›</div></div>
       <div class="sl-item" onclick="openModal('contact-modal')"><div class="sl-icon">☎️</div><div class="sl-txt"><div class="sl-lbl">Contact SR Feeds</div><div class="sl-sub">+91 98765 43210 • Support</div></div><div class="sl-arr">›</div></div>
       <div class="sl-item" onclick="exportData()"><div class="sl-icon">📄</div><div class="sl-txt"><div class="sl-lbl">Export Farm Data</div><div class="sl-sub">JSON backup of all records</div></div><div class="sl-arr">›</div></div>
       <div class="sl-item" onclick="clearAllData()"><div class="sl-icon">🗑️</div><div class="sl-txt"><div class="sl-lbl">Clear App Data</div><div class="sl-sub">Reset all records & progress</div></div><div class="sl-arr" style="color:#dc2626;">›</div></div>
@@ -891,14 +979,7 @@ const LS = {
 // =============================================
 // DATA
 // =============================================
-const OB_SLIDES=[
-  {ic:'🌾',title:'Welcome to SR Feeds',desc:'India\'s premium science-backed animal nutrition brand. Now on your phone — works fully offline, worldwide.'},
-  {ic:'🐓',title:'Healthier Animals',desc:'Precision nutrition formulated for every stage of your livestock\'s lifecycle. From chick to market.'},
-  {ic:'📈',title:'Higher Productivity',desc:'Optimized FCR, stronger immunity, better egg yields, higher milk output. Science that pays.'},
-  {ic:'🛠',title:'Smart Farm Tools',desc:'Feed calculator, profit estimator, disease guide, vaccination planner — all offline, all free.'},
-  {ic:'📱',title:'100% Offline Ready',desc:'All guides, calculators, disease data, and farm records work without internet. Always.'},
-];
-let obIdx=0;
+// OB_SLIDES moved to OB_SLIDES_DATA (per-language) in onboarding section below
 
 const TIPS=[
   'Broiler chicks need water before feed in the first hour. Dehydration in hour 1 causes poor growth for the entire flock life.',
@@ -1068,38 +1149,265 @@ let wizStep=0, wizData={};
 let openModalStack=[];
 
 // =============================================
-// SPLASH + ONBOARDING
 // =============================================
-setTimeout(()=>{
-  document.getElementById('splash').style.opacity='0';
-  setTimeout(()=>{
-    document.getElementById('splash').style.display='none';
-    document.getElementById('onboarding').style.display='flex';
-    renderOb();
-  },700);
-},2500);
+// SPLASH + ONBOARDING (3-STEP: LANG → SLIDES → SETUP)
+// =============================================
 
-function renderOb(){
-  const s=OB_SLIDES[obIdx];
-  document.getElementById('ob-content').innerHTML=`<div class="ob-icon-wrap">${s.ic}</div><div class="ob-title">${s.title}</div><div class="ob-desc">${s.desc}</div>`;
-  document.getElementById('ob-dots').innerHTML=OB_SLIDES.map((_,i)=>`<div class="ob-dot${i===obIdx?' active':''}"></div>`).join('');
-  document.getElementById('ob-next').textContent=obIdx===OB_SLIDES.length-1?'Get Started 🚀':'Next →';
+// ── i18n strings ──────────────────────────────
+const I18N={
+  en:{
+    setup_title:'Tell us about yourself',
+    setup_sub:"We'll personalise the app for you",
+    step_label:'STEP 3 OF 3',
+    lbl_name:'Full Name *',
+    lbl_phone:'Mobile Number',
+    lbl_village:'Village / Town',
+    lbl_type:'I am a... *',
+    lbl_size:'Farm / Flock Size',
+    lbl_submit:'GET STARTED 🚀',
+    name_ph:'e.g. Rajesh Kumar',
+    phone_ph:'e.g. 9876543210',
+    village_ph:'e.g. Aland, Kalaburagi',
+    size_opts:['— Select —','Small (below 500)','Medium (500 – 2000)','Large (2000 – 10,000)','Commercial (10,000+)'],
+    farmer_types:['Poultry Farmer','Broiler Farmer','Layer Farmer','Dairy Farmer','Goat Farmer','Dealer','Vet Staff','Other'],
+    greeting:'Hello',
+    skip:'Skip intro',
+    next:'NEXT →',
+    get_started:'GET STARTED 🚀',
+    privacy:'🔒 All data stays on your device only',
+    fill_required:'Please fill in required fields',
+    select_type:'Please select your farmer type',
+  },
+  kn:{
+    setup_title:'ನಿಮ್ಮ ಬಗ್ಗೆ ತಿಳಿಸಿ',
+    setup_sub:'ನಾವು ಆ್ಯಪ್ ಅನ್ನು ನಿಮಗಾಗಿ ವೈಯಕ್ತೀಕರಿಸುತ್ತೇವೆ',
+    step_label:'ಹಂತ 3 / 3',
+    lbl_name:'ಪೂರ್ಣ ಹೆಸರು *',
+    lbl_phone:'ಮೊಬೈಲ್ ಸಂಖ್ಯೆ',
+    lbl_village:'ಗ್ರಾಮ / ಪಟ್ಟಣ',
+    lbl_type:'ನಾನು... *',
+    lbl_size:'ಫಾರ್ಮ್ / ಹಿಂಡಿನ ಗಾತ್ರ',
+    lbl_submit:'ಪ್ರಾರಂಭಿಸಿ 🚀',
+    name_ph:'ಉದಾ. ರಾಜೇಶ್ ಕುಮಾರ್',
+    phone_ph:'ಉದಾ. 9876543210',
+    village_ph:'ಉದಾ. ಆಲಂದ, ಕಲಬುರಗಿ',
+    size_opts:['— ಆಯ್ಕೆ ಮಾಡಿ —','ಸಣ್ಣ (500 ಕೆಳಗೆ)','ಮಧ್ಯಮ (500 – 2000)','ದೊಡ್ಡ (2000 – 10,000)','ವಾಣಿಜ್ಯ (10,000+)'],
+    farmer_types:['ಕೋಳಿ ರೈತ','ಬ್ರಾಯ್ಲರ್ ರೈತ','ಲೇಯರ್ ರೈತ','ಹೈನು ರೈತ','ಮೇಕೆ ರೈತ','ಡೀಲರ್','ಪಶು ವೈದ್ಯ','ಇತರರು'],
+    greeting:'ನಮಸ್ಕಾರ',
+    skip:'ಮುಂದೆ ಹೋಗಿ',
+    next:'ಮುಂದೆ →',
+    get_started:'ಪ್ರಾರಂಭಿಸಿ 🚀',
+    privacy:'🔒 ಎಲ್ಲಾ ಡೇಟಾ ನಿಮ್ಮ ಸಾಧನದಲ್ಲಿ ಮಾತ್ರ ಉಳಿಯುತ್ತದೆ',
+    fill_required:'ದಯವಿಟ್ಟು ಅಗತ್ಯ ಕ್ಷೇತ್ರಗಳನ್ನು ತುಂಬಿರಿ',
+    select_type:'ದಯವಿಟ್ಟು ನಿಮ್ಮ ರೈತ ಪ್ರಕಾರ ಆಯ್ಕೆ ಮಾಡಿ',
+  },
+  hi:{
+    setup_title:'अपने बारे में बताएं',
+    setup_sub:'हम ऐप को आपके लिए कस्टमाइज़ करेंगे',
+    step_label:'चरण 3 / 3',
+    lbl_name:'पूरा नाम *',
+    lbl_phone:'मोबाइल नंबर',
+    lbl_village:'गाँव / शहर',
+    lbl_type:'मैं हूँ... *',
+    lbl_size:'फार्म / झुंड का आकार',
+    lbl_submit:'शुरू करें 🚀',
+    name_ph:'जैसे: राजेश कुमार',
+    phone_ph:'जैसे: 9876543210',
+    village_ph:'जैसे: आलंद, कलबुर्गी',
+    size_opts:['— चुनें —','छोटा (500 से कम)','मध्यम (500 – 2000)','बड़ा (2000 – 10,000)','व्यावसायिक (10,000+)'],
+    farmer_types:['पोल्ट्री किसान','ब्रॉयलर किसान','लेयर किसान','डेयरी किसान','बकरी पालक','डीलर','पशु चिकित्सक','अन्य'],
+    greeting:'नमस्ते',
+    skip:'परिचय छोड़ें',
+    next:'आगे →',
+    get_started:'शुरू करें 🚀',
+    privacy:'🔒 सभी डेटा केवल आपके डिवाइस पर रहता है',
+    fill_required:'कृपया आवश्यक फ़ील्ड भरें',
+    select_type:'कृपया अपना किसान प्रकार चुनें',
+  },
+};
+
+// ── Onboarding slides per language ─────────────
+const OB_SLIDES_DATA={
+  en:[
+    {ic:'🌾',title:'Welcome to SR FEEDS',desc:'Your complete farming companion — nutrition guides, farm records, profit calculators and more. All offline.'},
+    {ic:'📚',title:'Learn & Earn Badges',desc:'Interactive lessons on broiler, layer, dairy & goat farming. Take quizzes and earn expert badges.'},
+    {ic:'📋',title:'Track Your Farm',desc:'Log feed, eggs, milk, expenses, vaccinations and more. Export reports as CSV or JSON anytime.'},
+    {ic:'🛠️',title:'Powerful Farm Tools',desc:'Feed calculator, profit estimator, disease guide, vaccination planner and a product catalog — all free.'},
+  ],
+  kn:[
+    {ic:'🌾',title:'SR FEEDS ಗೆ ಸ್ವಾಗತ',desc:'ನಿಮ್ಮ ಸಂಪೂರ್ಣ ಕೃಷಿ ಸಹಾಯಕ — ಪೌಷ್ಟಿಕ ಮಾರ್ಗದರ್ಶಿ, ದಾಖಲೆಗಳು, ಲಾಭ ಲೆಕ್ಕ ಎಲ್ಲವೂ ಆಫ್‌ಲೈನ್‌ನಲ್ಲಿ.'},
+    {ic:'📚',title:'ಕಲಿಯಿರಿ ಮತ್ತು ಬ್ಯಾಡ್ಜ್ ಗಳಿಸಿ',desc:'ಬ್ರಾಯ್ಲರ್, ಲೇಯರ್, ಹೈನು ಮತ್ತು ಮೇಕೆ ಸಾಕಾಣಿಕೆಯ ಪಾಠಗಳು. ರಸಪ್ರಶ್ನೆ ಮಾಡಿ ತಜ್ಞ ಬ್ಯಾಡ್ಜ್ ಪಡೆಯಿರಿ.'},
+    {ic:'📋',title:'ನಿಮ್ಮ ಫಾರ್ಮ್ ಟ್ರ್ಯಾಕ್ ಮಾಡಿ',desc:'ಮೇವು, ಮೊಟ್ಟೆ, ಹಾಲು, ಖರ್ಚು, ಲಸಿಕೆ ದಾಖಲೆ ಮಾಡಿ. CSV/JSON ವರದಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ.'},
+    {ic:'🛠️',title:'ಶಕ್ತಿಶಾಲಿ ಕೃಷಿ ಉಪಕರಣಗಳು',desc:'ಫೀಡ್ ಕ್ಯಾಲ್ಕ್ಯುಲೇಟರ್, ಲಾಭ ಅಂದಾಜು, ರೋಗ ಮಾರ್ಗದರ್ಶಿ, ಲಸಿಕೆ ಯೋಜನೆ — ಎಲ್ಲಾ ಉಚಿತ.'},
+  ],
+  hi:[
+    {ic:'🌾',title:'SR FEEDS में आपका स्वागत है',desc:'आपका पूरा खेती साथी — पोषण गाइड, रिकॉर्ड, लाभ कैलकुलेटर और बहुत कुछ। सब ऑफलाइन।'},
+    {ic:'📚',title:'सीखें और बैज कमाएं',desc:'ब्रॉयलर, लेयर, डेयरी और बकरी पालन के इंटरेक्टिव पाठ। क्विज़ देकर विशेषज्ञ बैज पाएं।'},
+    {ic:'📋',title:'अपना फार्म ट्रैक करें',desc:'चारा, अंडे, दूध, खर्च, टीकाकरण सब दर्ज करें। कभी भी CSV/JSON रिपोर्ट डाउनलोड करें।'},
+    {ic:'🛠️',title:'शक्तिशाली फार्म टूल्स',desc:'फीड कैलकुलेटर, लाभ अनुमान, रोग मार्गदर्शिका, टीकाकरण योजना — सब मुफ्त।'},
+  ],
+};
+
+// ── State ──────────────────────────────────────
+let curLang='en';
+let obSlideIdx=0;
+let selectedFarmerType='';
+let obSlides=OB_SLIDES_DATA.en;
+
+// ── Boot: decide first-time vs returning ──────
+setTimeout(()=>{
+  const splash=document.getElementById('splash');
+  splash.style.opacity='0';
+  setTimeout(()=>{
+    splash.style.display='none';
+    const user=LS.get('srf_user');
+    if(user && user.name){
+      // Returning user — go straight to app
+      startApp();
+    } else {
+      // First time — show onboarding
+      document.getElementById('onboarding').style.display='block';
+      showObStep('lang');
+    }
+  },700);
+},2200);
+
+// ── Step control ──────────────────────────────
+function showObStep(step){
+  document.getElementById('ob-lang').style.display=step==='lang'?'flex':'none';
+  document.getElementById('ob-slides').style.display=step==='slides'?'flex':'none';
+  document.getElementById('ob-setup').style.display=step==='setup'?'flex':'none';
 }
-function nextSlide(){if(obIdx<OB_SLIDES.length-1){obIdx++;renderOb();}else startApp();}
+
+// ── STEP 1: Language selection ─────────────────
+function selectLang(lang){
+  curLang=lang;
+  LS.set('srf_lang',lang);
+  obSlides=OB_SLIDES_DATA[lang]||OB_SLIDES_DATA.en;
+  obSlideIdx=0;
+  applySetupLabels();
+  showObStep('slides');
+  renderObSlide();
+}
+
+// ── STEP 2: Slides ─────────────────────────────
+function renderObSlide(){
+  const s=obSlides[obSlideIdx];
+  const L=I18N[curLang];
+  const isLast=obSlideIdx===obSlides.length-1;
+  document.getElementById('ob-slide-body').innerHTML=`
+    <div class="ob-icon-wrap">${s.ic}</div>
+    <div class="ob-title">${s.title}</div>
+    <div class="ob-desc">${s.desc}</div>`;
+  // dots
+  document.getElementById('ob-dots2').innerHTML=obSlides.map((_,i)=>
+    `<div class="ob-dot${i===obSlideIdx?' active':''}" style="width:${i===obSlideIdx?'28px':'7px'};height:7px;border-radius:4px;display:inline-block;transition:.3s;"></div>`
+  ).join('');
+  // buttons
+  document.getElementById('ob-fwd-btn').textContent=isLast?L.get_started:L.next;
+  document.getElementById('ob-back-btn').style.display=obSlideIdx>0?'flex':'none';
+  document.getElementById('ob-skip-btn').textContent=L.skip;
+  document.getElementById('ob-skip-btn').style.display=isLast?'none':'block';
+}
+function obNext(){
+  if(obSlideIdx<obSlides.length-1){obSlideIdx++;renderObSlide();}
+  else{skipToSetup();}
+}
+function obBack(){if(obSlideIdx>0){obSlideIdx--;renderObSlide();}}
+function skipToSetup(){showObStep('setup');}
+
+// ── STEP 3: User setup ─────────────────────────
+const FARMER_TYPE_IDS=['ft-poultry','ft-broiler','ft-layer','ft-dairy','ft-goat','ft-dealer','ft-vet','ft-other'];
+
+function applySetupLabels(){
+  const L=I18N[curLang]||I18N.en;
+  const safe=(id,txt)=>{const el=document.getElementById(id);if(el)el.textContent=txt;};
+  const safeAttr=(id,attr,val)=>{const el=document.getElementById(id);if(el)el.setAttribute(attr,val);};
+  safe('setup-title',L.setup_title);
+  safe('setup-sub',L.setup_sub);
+  safe('setup-step-label',L.step_label);
+
+  // Labels (using innerText on the label elements)
+  const lblEls=document.querySelectorAll('#ob-setup label');
+  const lblKeys=['lbl_name','lbl_phone','lbl_village','lbl_type','lbl_size'];
+  lblKeys.forEach((k,i)=>{if(lblEls[i])lblEls[i].textContent=L[k];});
+
+  safeAttr('setup-name','placeholder',L.name_ph);
+  safeAttr('setup-phone','placeholder',L.phone_ph);
+  safeAttr('setup-village','placeholder',L.village_ph);
+  safe('setup-submit',L.lbl_submit);
+
+  // Farmer type labels
+  FARMER_TYPE_IDS.forEach((id,i)=>safe(id,L.farmer_types[i]));
+
+  // Size options
+  const sel=document.getElementById('setup-size');
+  if(sel){sel.innerHTML=L.size_opts.map(o=>`<option>${o}</option>`).join('');}
+
+  // Privacy note
+  const priv=document.querySelector('#ob-setup [data-privacy]');
+  if(priv)priv.textContent=L.privacy;
+}
+
+function selectFarmerType(type,el){
+  selectedFarmerType=type;
+  document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');
+  validateSetup();
+}
+
+function validateSetup(){
+  const name=document.getElementById('setup-name')?.value.trim();
+  const btn=document.getElementById('setup-submit');
+  if(btn){
+    const valid=name&&name.length>=2&&selectedFarmerType;
+    btn.disabled=!valid;
+    btn.style.opacity=valid?'1':'0.45';
+    btn.style.cursor=valid?'pointer':'not-allowed';
+  }
+}
+
+function submitSetup(){
+  const L=I18N[curLang]||I18N.en;
+  const name=document.getElementById('setup-name')?.value.trim();
+  const phone=document.getElementById('setup-phone')?.value.trim();
+  const village=document.getElementById('setup-village')?.value.trim();
+  const size=document.getElementById('setup-size')?.value;
+  if(!name||name.length<2){showToast(L.fill_required);return;}
+  if(!selectedFarmerType){showToast(L.select_type);return;}
+  const user={
+    name,phone,village,
+    farmerType:selectedFarmerType,
+    farmSize:size||'',
+    lang:curLang,
+    joinedAt:new Date().toISOString(),
+  };
+  LS.set('srf_user',user);
+  document.getElementById('onboarding').style.display='none';
+  startApp();
+}
+
+// ── Main app launch ────────────────────────────
 function startApp(){
   document.getElementById('onboarding').style.display='none';
   document.getElementById('app').style.display='flex';
   applyDark(LS.get('srf_dark',false));
-  document.getElementById('daily-tip').textContent=TIPS[Math.floor(Math.random()*TIPS.length)];
-  // Update hero greeting if user data exists
+
+  // Apply saved language
+  curLang=LS.get('srf_lang','en');
+
+  // Greeting from user profile
   const ud=LS.get('srf_user');
-  if(ud){const hg=document.getElementById('home-greeting');if(hg)hg.textContent='Hello, '+ud.name.split(' ')[0]+' 👋';}
+  if(ud){
+    const L=I18N[curLang]||I18N.en;
+    const hg=document.getElementById('home-greeting');
+    if(hg)hg.textContent=L.greeting+', '+ud.name.split(' ')[0]+' 👋';
+  }
+
+  document.getElementById('daily-tip').textContent=TIPS[Math.floor(Math.random()*TIPS.length)];
   fetchWeather();
-  // Init academy
   renderAcademy();updateTotalProgress();updateCatProgress();
-  // Init tracker (async)
   initTracker();
-  // Init tools modals
   initDiseases('All');
   renderCatalog(PRODUCTS);
   renderDealers(DEALERS);
@@ -2192,9 +2500,31 @@ function updateProfileStats(){
   const bg=document.getElementById('prof-badges-grid');
   if(bg)bg.innerHTML=BADGE_DEFS.map(b=>`<div style="background:var(--card);border:1px solid ${earned[b.id]?'var(--gold)':'var(--border)'};border-radius:12px;padding:12px 6px;text-align:center;box-shadow:var(--shadow);${!earned[b.id]?'opacity:.4;filter:grayscale(.8);':''}"><div style="font-size:26px;margin-bottom:4px;">${b.ic}</div><div style="font-size:9px;font-weight:700;color:${earned[b.id]?'var(--g2)':'var(--muted)'};line-height:1.2;">${b.name}</div></div>`).join('');
 
+  // Language label
+  const langNames={en:'English',kn:'ಕನ್ನಡ',hi:'हिंदी'};
+  const ll=document.getElementById('prof-lang-lbl');if(ll)ll.textContent=langNames[curLang]||'English';
+
   // Sync dark toggle
   const tog=document.getElementById('dark-tog');if(tog)tog.classList.toggle('on',_darkMode);
 }
+
+function changeLanguage(){
+  const langNames={en:'🇮🇳 English',kn:'🏡 ಕನ್ನಡ',hi:'🕌 हिंदी'};
+  const opts=Object.entries(langNames).map(([k,v])=>`<div onclick="setAppLang('${k}')" style="padding:14px 16px;font-size:15px;font-weight:600;color:var(--text);cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">${v}${curLang===k?' <span style=\'color:var(--g3);margin-left:auto;\'>✓</span>':''}</div>`).join('');
+  // show a quick inline modal
+  const m=document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;display:flex;align-items:flex-end;';
+  m.innerHTML=`<div style="width:100%;max-width:430px;margin:0 auto;background:var(--card);border-radius:20px 20px 0 0;padding-bottom:24px;"><div style="padding:16px;text-align:center;font-size:15px;font-weight:700;color:var(--g1);border-bottom:1px solid var(--border);">Choose Language</div>${opts}<button onclick="this.closest('[style]').remove()" style="width:calc(100% - 32px);margin:12px 16px 0;padding:12px;border-radius:12px;border:1.5px solid var(--border);background:none;font-size:14px;cursor:pointer;color:var(--muted);">Cancel</button></div>`;
+  document.body.appendChild(m);
+}
+function setAppLang(lang){
+  curLang=lang;LS.set('srf_lang',lang);
+  document.querySelectorAll('[style*="position:fixed"]').forEach(el=>{if(el.querySelector('[onclick*="setAppLang"]'))el.remove();});
+  const langNames={en:'English',kn:'ಕನ್ನಡ',hi:'हिंदी'};
+  const lbl=document.getElementById('prof-lang-lbl');if(lbl)lbl.textContent=langNames[lang]||'English';
+  showToast('Language updated ✓');
+}
+
 
 function exportData(){
   const data={trRecords,acaProgress,calcHistory,profitHistory,vacDone,notifications,exportDate:new Date().toISOString()};
@@ -2245,6 +2575,943 @@ function showToast(msg){
   t.textContent=msg;t.style.opacity='1';
   clearTimeout(t._tmr);t._tmr=setTimeout(()=>t.style.opacity='0',2500);
 }
+
+
+// =====================================================================
+// SR FEEDS FIX PATCH v4.1 — All critical bugs fixed
+// Fixes: Language, Weather/Location, Export (CSV/XLSX/PDF),
+//        Tracker Date Filter, Profile Freeze, Notifications
+// =====================================================================
+
+// ─────────────────────────────────────────────
+// FIX 1 — EXTENDED I18N (Telugu + Tamil added)
+//         + App-wide UI translation strings
+// ─────────────────────────────────────────────
+const I18N_EXTENDED = {
+  en: {
+    // Nav
+    nav_home:'Home', nav_learn:'Learn', nav_tools:'Tools',
+    nav_tracker:'Tracker', nav_profile:'Profile',
+    // Home
+    home_quick:'Quick Access', home_tip:'Today\'s Tip', home_featured:'Featured Product',
+    // Tracker
+    tr_title:'Farm Record Book', tr_add:'+ Add Record', tr_search:'Search records...',
+    tr_all:'All', tr_date_filter:'Date Filter',
+    df_all:'All Time', df_today:'Today', df_yesterday:'Yesterday',
+    df_7:'Last 7 Days', df_30:'Last 30 Days', df_month:'This Month', df_custom:'Custom Range',
+    // Export sheet
+    exp_title:'Export Farm Data', exp_csv:'Export as CSV',
+    exp_csv_sub:'Open in Excel or Google Sheets',
+    exp_xlsx:'Export as Excel (.xlsx)',
+    exp_xlsx_sub:'Native Excel workbook format',
+    exp_pdf:'Export as PDF Report',
+    exp_pdf_sub:'Print-ready farm report',
+    exp_json:'Full Backup (JSON)',
+    exp_json_sub:'Complete data backup',
+    // Profile
+    prof_settings:'Settings', prof_dark:'Dark Mode', prof_dark_sub:'Toggle app theme',
+    prof_notif:'Notifications', prof_notif_sub:'Farming alerts & reminders',
+    prof_lang:'Language / ಭಾಷೆ / भाषा', prof_contact:'Contact SR Feeds',
+    prof_export_data:'Export Farm Data', prof_clear:'Clear App Data',
+    prof_about:'About SR Feeds', prof_privacy:'Privacy',
+    // Language picker
+    lang_title:'Choose Language',
+    lang_cancel:'Cancel',
+    // Weather
+    wc_refresh:'⟳ Refresh',
+    wc_offline:'Offline – weather unavailable',
+    wc_loading:'Fetching weather...',
+    wc_live:'Live',
+    // Toasts
+    toast_lang:'Language updated ✓',
+    toast_no_records:'No records to export',
+    toast_csv:'CSV exported ✓',
+    toast_xlsx:'Excel exported ✓',
+    toast_pdf:'PDF report opened ✓',
+    toast_json:'JSON backup exported ✓',
+    toast_location_ok:'Location captured ✓',
+    toast_location_denied:'Location denied – using manual city',
+    // Onboarding location/notif
+    ob_loc_title:'📍 Enable Location',
+    ob_loc_body:'Allow SR FEEDS to detect your location for accurate local weather?',
+    ob_loc_allow:'Allow Location',
+    ob_loc_skip:'Skip',
+    ob_notif_title:'🔔 Enable Notifications',
+    ob_notif_body:'Get feed reminders, vaccination alerts and weather warnings?',
+    ob_notif_allow:'Allow Notifications',
+    ob_notif_skip:'Skip',
+  },
+  kn: {
+    nav_home:'ಮನೆ', nav_learn:'ಕಲಿಯಿರಿ', nav_tools:'ಉಪಕರಣ',
+    nav_tracker:'ದಾಖಲೆ', nav_profile:'ಪ್ರೊಫೈಲ್',
+    home_quick:'ತ್ವರಿತ ಪ್ರವೇಶ', home_tip:'ಇಂದಿನ ಸಲಹೆ', home_featured:'ವಿಶೇಷ ಉತ್ಪನ್ನ',
+    tr_title:'ಫಾರ್ಮ್ ದಾಖಲೆ', tr_add:'+ ದಾಖಲೆ ಸೇರಿಸಿ', tr_search:'ದಾಖಲೆ ಹುಡುಕಿ...',
+    tr_all:'ಎಲ್ಲಾ', tr_date_filter:'ದಿನಾಂಕ ಫಿಲ್ಟರ್',
+    df_all:'ಎಲ್ಲಾ ಸಮಯ', df_today:'ಇಂದು', df_yesterday:'ನಿನ್ನೆ',
+    df_7:'ಕಳೆದ 7 ದಿನ', df_30:'ಕಳೆದ 30 ದಿನ', df_month:'ಈ ತಿಂಗಳು', df_custom:'ಕಸ್ಟಮ್ ಶ್ರೇಣಿ',
+    exp_title:'ಫಾರ್ಮ್ ಡೇಟಾ ರಫ್ತು', exp_csv:'CSV ರಫ್ತು',
+    exp_csv_sub:'Excel ಅಥವಾ Google Sheets ನಲ್ಲಿ ತೆರೆಯಿರಿ',
+    exp_xlsx:'Excel (.xlsx) ರಫ್ತು', exp_xlsx_sub:'ಮೂಲ Excel ಫೈಲ್',
+    exp_pdf:'PDF ವರದಿ ರಫ್ತು', exp_pdf_sub:'ಪ್ರಿಂಟ್ ಸಿದ್ಧ ವರದಿ',
+    exp_json:'ಪೂರ್ಣ ಬ್ಯಾಕಪ್ (JSON)', exp_json_sub:'ಸಂಪೂರ್ಣ ಡೇಟಾ ಬ್ಯಾಕಪ್',
+    prof_settings:'ಸೆಟ್ಟಿಂಗ್ಸ್', prof_dark:'ಡಾರ್ಕ್ ಮೋಡ್', prof_dark_sub:'ಆ್ಯಪ್ ಥೀಮ್ ಬದಲಾಯಿಸಿ',
+    prof_notif:'ಅಧಿಸೂಚನೆ', prof_notif_sub:'ಕೃಷಿ ಎಚ್ಚರಿಕೆ ಮತ್ತು ಜ್ಞಾಪನೆ',
+    prof_lang:'ಭಾಷೆ', prof_contact:'SR Feeds ಸಂಪರ್ಕಿಸಿ',
+    prof_export_data:'ಫಾರ್ಮ್ ಡೇಟಾ ರಫ್ತು', prof_clear:'ಎಲ್ಲಾ ಡೇಟಾ ಅಳಿಸಿ',
+    prof_about:'SR Feeds ಬಗ್ಗೆ', prof_privacy:'ಗೌಪ್ಯತೆ',
+    lang_title:'ಭಾಷೆ ಆಯ್ಕೆ ಮಾಡಿ', lang_cancel:'ರದ್ದು',
+    wc_refresh:'⟳ ರಿಫ್ರೆಶ್', wc_offline:'ಆಫ್‌ಲೈನ್ – ಹವಾಮಾನ ಲಭ್ಯವಿಲ್ಲ',
+    wc_loading:'ಹವಾಮಾನ ತರುತ್ತಿದ್ದೇವೆ...', wc_live:'ನೇರ',
+    toast_lang:'ಭಾಷೆ ನವೀಕರಿಸಲಾಗಿದೆ ✓',
+    toast_no_records:'ರಫ್ತು ಮಾಡಲು ದಾಖಲೆಗಳಿಲ್ಲ',
+    toast_csv:'CSV ರಫ್ತಾಯಿತು ✓', toast_xlsx:'Excel ರಫ್ತಾಯಿತು ✓',
+    toast_pdf:'PDF ತೆರೆಯಲಾಗಿದೆ ✓', toast_json:'JSON ಬ್ಯಾಕಪ್ ರಫ್ತಾಯಿತು ✓',
+    toast_location_ok:'ಸ್ಥಳ ಗೊತ್ತಾಯಿತು ✓', toast_location_denied:'ಸ್ಥಳ ನಿರಾಕರಿಸಲಾಗಿದೆ – ಮ್ಯಾನ್ಯುವಲ್ ನಗರ ಬಳಸಿ',
+    ob_loc_title:'📍 ಸ್ಥಳ ಅನುಮತಿ', ob_loc_body:'ಸ್ಥಳೀಯ ಹವಾಮಾನಕ್ಕಾಗಿ SR FEEDS ಸ್ಥಳ ಪತ್ತೆ ಮಾಡಲಿ?',
+    ob_loc_allow:'ಅನುಮತಿ ನೀಡಿ', ob_loc_skip:'ಬಿಟ್ಟು ಮುಂದೆ',
+    ob_notif_title:'🔔 ಅಧಿಸೂಚನೆ ಅನ್ನ ಸಕ್ರಿಯಗೊಳಿಸಿ',
+    ob_notif_body:'ಮೇವು, ಲಸಿಕೆ ಮತ್ತು ಹವಾಮಾನ ಎಚ್ಚರಿಕೆ ಪಡೆಯಿರಾ?',
+    ob_notif_allow:'ಅನುಮತಿ ನೀಡಿ', ob_notif_skip:'ಬಿಟ್ಟು ಮುಂದೆ',
+  },
+  hi: {
+    nav_home:'होम', nav_learn:'सीखें', nav_tools:'टूल्स',
+    nav_tracker:'रिकॉर्ड', nav_profile:'प्रोफ़ाइल',
+    home_quick:'त्वरित पहुँच', home_tip:'आज की सलाह', home_featured:'फीचर्ड उत्पाद',
+    tr_title:'फार्म रिकॉर्ड', tr_add:'+ रिकॉर्ड जोड़ें', tr_search:'रिकॉर्ड खोजें...',
+    tr_all:'सभी', tr_date_filter:'तारीख फ़िल्टर',
+    df_all:'सभी समय', df_today:'आज', df_yesterday:'कल',
+    df_7:'पिछले 7 दिन', df_30:'पिछले 30 दिन', df_month:'इस महीने', df_custom:'कस्टम सीमा',
+    exp_title:'फार्म डेटा निर्यात', exp_csv:'CSV निर्यात',
+    exp_csv_sub:'Excel या Google Sheets में खोलें',
+    exp_xlsx:'Excel (.xlsx) निर्यात', exp_xlsx_sub:'मूल Excel फ़ाइल',
+    exp_pdf:'PDF रिपोर्ट निर्यात', exp_pdf_sub:'प्रिंट तैयार रिपोर्ट',
+    exp_json:'पूर्ण बैकअप (JSON)', exp_json_sub:'संपूर्ण डेटा बैकअप',
+    prof_settings:'सेटिंग्स', prof_dark:'डार्क मोड', prof_dark_sub:'ऐप थीम बदलें',
+    prof_notif:'सूचनाएं', prof_notif_sub:'कृषि अलर्ट और रिमाइंडर',
+    prof_lang:'भाषा', prof_contact:'SR Feeds से संपर्क',
+    prof_export_data:'फार्म डेटा निर्यात', prof_clear:'सभी डेटा साफ़ करें',
+    prof_about:'SR Feeds के बारे में', prof_privacy:'गोपनीयता',
+    lang_title:'भाषा चुनें', lang_cancel:'रद्द करें',
+    wc_refresh:'⟳ रिफ्रेश', wc_offline:'ऑफलाइन – मौसम उपलब्ध नहीं',
+    wc_loading:'मौसम लाया जा रहा है...', wc_live:'लाइव',
+    toast_lang:'भाषा अपडेट हो गई ✓',
+    toast_no_records:'निर्यात के लिए कोई रिकॉर्ड नहीं',
+    toast_csv:'CSV निर्यात हो गई ✓', toast_xlsx:'Excel निर्यात हो गई ✓',
+    toast_pdf:'PDF रिपोर्ट खुल गई ✓', toast_json:'JSON बैकअप निर्यात हो गया ✓',
+    toast_location_ok:'स्थान मिल गया ✓', toast_location_denied:'स्थान अस्वीकार – मैनुअल शहर का उपयोग',
+    ob_loc_title:'📍 स्थान की अनुमति', ob_loc_body:'स्थानीय मौसम के लिए SR FEEDS को आपका स्थान पता करने दें?',
+    ob_loc_allow:'अनुमति दें', ob_loc_skip:'छोड़ें',
+    ob_notif_title:'🔔 सूचनाएं चालू करें',
+    ob_notif_body:'चारा, टीकाकरण और मौसम अलर्ट प्राप्त करें?',
+    ob_notif_allow:'अनुमति दें', ob_notif_skip:'छोड़ें',
+  },
+  te: {
+    nav_home:'హోమ్', nav_learn:'నేర్చుకో', nav_tools:'టూల్స్',
+    nav_tracker:'రికార్డ్', nav_profile:'ప్రొఫైల్',
+    home_quick:'త్వరిత యాక్సెస్', home_tip:'నేటి చిట్కా', home_featured:'ఫీచర్డ్ ప్రొడక్ట్',
+    tr_title:'ఫార్మ్ రికార్డ్ బుక్', tr_add:'+ రికార్డ్ జోడించు', tr_search:'రికార్డులు వెతకండి...',
+    tr_all:'అన్నీ', tr_date_filter:'తేదీ ఫిల్టర్',
+    df_all:'అన్ని సమయం', df_today:'ఈరోజు', df_yesterday:'నిన్న',
+    df_7:'గత 7 రోజులు', df_30:'గత 30 రోజులు', df_month:'ఈ నెల', df_custom:'కస్టమ్ పరిధి',
+    exp_title:'ఫార్మ్ డేటా ఎగుమతి', exp_csv:'CSV ఎగుమతి',
+    exp_csv_sub:'Excel లేదా Google Sheets లో తెరవండి',
+    exp_xlsx:'Excel (.xlsx) ఎగుమతి', exp_xlsx_sub:'నేటివ్ Excel ఫైల్',
+    exp_pdf:'PDF నివేదిక ఎగుమతి', exp_pdf_sub:'ప్రింట్ సిద్ధ నివేదిక',
+    exp_json:'పూర్తి బ్యాకప్ (JSON)', exp_json_sub:'సంపూర్ణ డేటా బ్యాకప్',
+    prof_settings:'సెట్టింగ్స్', prof_dark:'డార్క్ మోడ్', prof_dark_sub:'యాప్ థీమ్ మార్చు',
+    prof_notif:'నోటిఫికేషన్లు', prof_notif_sub:'వ్యవసాయ హెచ్చరికలు & రిమైండర్లు',
+    prof_lang:'భాష', prof_contact:'SR Feeds ని సంప్రదించండి',
+    prof_export_data:'ఫార్మ్ డేటా ఎగుమతి', prof_clear:'అన్ని డేటా తొలగించు',
+    prof_about:'SR Feeds గురించి', prof_privacy:'గోప్యత',
+    lang_title:'భాష ఎంచుకోండి', lang_cancel:'రద్దు',
+    wc_refresh:'⟳ రిఫ్రెష్', wc_offline:'ఆఫ్‌లైన్ – వాతావరణం అందుబాటులో లేదు',
+    wc_loading:'వాతావరణం తీసుకొస్తున్నాం...', wc_live:'లైవ్',
+    toast_lang:'భాష అప్‌డేట్ అయింది ✓',
+    toast_no_records:'ఎగుమతి చేయడానికి రికార్డులు లేవు',
+    toast_csv:'CSV ఎగుమతి అయింది ✓', toast_xlsx:'Excel ఎగుమతి అయింది ✓',
+    toast_pdf:'PDF నివేదిక తెరవబడింది ✓', toast_json:'JSON బ్యాకప్ ఎగుమతి అయింది ✓',
+    toast_location_ok:'లొకేషన్ గుర్తించబడింది ✓', toast_location_denied:'లొకేషన్ తిరస్కరించబడింది – మాన్యువల్ నగరం ఉపయోగించు',
+    ob_loc_title:'📍 లొకేషన్ అనుమతి', ob_loc_body:'స్థానిక వాతావరణం కోసం SR FEEDS మీ లొకేషన్ తెలుసుకోనివ్వాలా?',
+    ob_loc_allow:'అనుమతి ఇవ్వు', ob_loc_skip:'దాటవేయి',
+    ob_notif_title:'🔔 నోటిఫికేషన్లు ఆన్ చేయి',
+    ob_notif_body:'ఫీడ్, వ్యాక్సినేషన్ మరియు వాతావరణ హెచ్చరికలు పొందాలా?',
+    ob_notif_allow:'అనుమతి ఇవ్వు', ob_notif_skip:'దాటవేయి',
+  },
+  ta: {
+    nav_home:'முகப்பு', nav_learn:'கற்றுக்கொள்', nav_tools:'கருவிகள்',
+    nav_tracker:'பதிவுகள்', nav_profile:'சுயவிவரம்',
+    home_quick:'விரைவு அணுகல்', home_tip:'இன்றைய குறிப்பு', home_featured:'சிறப்பு தயாரிப்பு',
+    tr_title:'பண்ணை பதிவு புத்தகம்', tr_add:'+ பதிவு சேர்க்க', tr_search:'பதிவுகளை தேடு...',
+    tr_all:'அனைத்தும்', tr_date_filter:'தேதி வடிகட்டி',
+    df_all:'எல்லா நேரமும்', df_today:'இன்று', df_yesterday:'நேற்று',
+    df_7:'கடந்த 7 நாட்கள்', df_30:'கடந்த 30 நாட்கள்', df_month:'இந்த மாதம்', df_custom:'தனிப்பயன் வரம்பு',
+    exp_title:'பண்ணை தரவு ஏற்றுமதி', exp_csv:'CSV ஏற்றுமதி',
+    exp_csv_sub:'Excel அல்லது Google Sheets இல் திற',
+    exp_xlsx:'Excel (.xlsx) ஏற்றுமதி', exp_xlsx_sub:'நேட்டிவ் Excel கோப்பு',
+    exp_pdf:'PDF அறிக்கை ஏற்றுமதி', exp_pdf_sub:'அச்சிட தயார் அறிக்கை',
+    exp_json:'முழு காப்புப்பிரதி (JSON)', exp_json_sub:'முழுமையான தரவு காப்புப்பிரதி',
+    prof_settings:'அமைப்புகள்', prof_dark:'இருண்ட பயன்முறை', prof_dark_sub:'ஆப் தீமை மாற்று',
+    prof_notif:'அறிவிப்புகள்', prof_notif_sub:'விவசாய எச்சரிக்கைகள் & நினைவூட்டல்கள்',
+    prof_lang:'மொழி', prof_contact:'SR Feeds தொடர்பு',
+    prof_export_data:'பண்ணை தரவு ஏற்றுமதி', prof_clear:'அனைத்து தரவையும் அழி',
+    prof_about:'SR Feeds பற்றி', prof_privacy:'தனியுரிமை',
+    lang_title:'மொழி தேர்வு செய்யவும்', lang_cancel:'ரத்து',
+    wc_refresh:'⟳ புதுப்பி', wc_offline:'இணைப்பில்லை – வானிலை கிடைக்கவில்லை',
+    wc_loading:'வானிலை தகவல் கொண்டு வருகிறோம்...', wc_live:'நேரலை',
+    toast_lang:'மொழி புதுப்பிக்கப்பட்டது ✓',
+    toast_no_records:'ஏற்றுமதி செய்ய பதிவுகள் இல்லை',
+    toast_csv:'CSV ஏற்றுமதியாயிற்று ✓', toast_xlsx:'Excel ஏற்றுமதியாயிற்று ✓',
+    toast_pdf:'PDF அறிக்கை திறக்கப்பட்டது ✓', toast_json:'JSON காப்புப்பிரதி ஏற்றுமதியாயிற்று ✓',
+    toast_location_ok:'இடம் கண்டறியப்பட்டது ✓', toast_location_denied:'இடம் மறுக்கப்பட்டது – கைமுறை நகரம் பயன்படுத்தவும்',
+    ob_loc_title:'📍 இட அனுமதி', ob_loc_body:'உள்ளூர் வானிலைக்கு SR FEEDS உங்கள் இடத்தை கண்டறியட்டுமா?',
+    ob_loc_allow:'அனுமதி தவும்', ob_loc_skip:'தவிர்',
+    ob_notif_title:'🔔 அறிவிப்புகளை இயக்கு',
+    ob_notif_body:'தீவனம், தடுப்பூசி மற்றும் வானிலை எச்சரிக்கைகள் பெற விரும்புகிறீர்களா?',
+    ob_notif_allow:'அனுமதி தவும்', ob_notif_skip:'தவிர்',
+  },
+};
+
+// Merge extended I18N into existing I18N
+Object.keys(I18N_EXTENDED).forEach(lang => {
+  if(I18N[lang]) Object.assign(I18N[lang], I18N_EXTENDED[lang]);
+  else I18N[lang] = I18N_EXTENDED[lang];
+});
+
+// ─────────────────────────────────────────────
+// FIX 2 — CENTRALIZED GLOBAL i18n APPLY ENGINE
+// ─────────────────────────────────────────────
+function applyI18nGlobal(lang) {
+  const L = I18N[lang] || I18N.en;
+  const safe = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
+  const safeQuery = (sel, txt) => { const el = document.querySelector(sel); if(el) el.textContent = txt; };
+  const safeAttr = (id, attr, val) => { const el = document.getElementById(id); if(el) el.setAttribute(attr, val); };
+
+  // ── Bottom Nav Labels ──
+  const bnLabels = document.querySelectorAll('.bn-label');
+  const navKeys = ['nav_home','nav_learn','nav_tools','nav_tracker','nav_profile'];
+  bnLabels.forEach((el, i) => { if(navKeys[i]) el.textContent = L[navKeys[i]] || el.textContent; });
+
+  // ── Home screen ──
+  const secHds = document.querySelectorAll('#scr-home .sec-hd');
+  if(secHds[0]) secHds[0].textContent = L.home_quick;
+  if(secHds[1]) secHds[1].textContent = L.home_tip;
+  if(secHds[2]) secHds[2].textContent = L.home_featured;
+
+  // ── Greeting ──
+  const ud = LS.get('srf_user');
+  if(ud) {
+    const hg = document.getElementById('home-greeting');
+    if(hg) hg.textContent = (L.greeting || 'Hello') + ', ' + ud.name.split(' ')[0] + ' 👋';
+  }
+
+  // ── Weather card ──
+  const wcRefresh = document.querySelector('.wc-refresh');
+  if(wcRefresh) wcRefresh.textContent = L.wc_refresh || '⟳ Refresh';
+
+  // ── Tracker ──
+  const trackerHdTitle = document.querySelector('.tracker-hd .learn-hd-title');
+  if(trackerHdTitle) trackerHdTitle.textContent = '📋 ' + (L.tr_title || 'Farm Record Book');
+  safeAttr('tr-search', 'placeholder', L.tr_search || 'Search records...');
+
+  // Rebuild date filter if it exists
+  const dfSel = document.getElementById('tr-date-filter');
+  if(dfSel) {
+    const dfKeys = ['df_all','df_today','df_yesterday','df_7','df_30','df_month','df_custom'];
+    const dfVals = ['all','today','yesterday','7','30','month','custom'];
+    Array.from(dfSel.options).forEach((opt, i) => {
+      if(L[dfKeys[i]]) opt.textContent = L[dfKeys[i]];
+    });
+  }
+
+  // ── Export sheet ──
+  const expTitle = document.querySelector('#export-sheet .sheet-title');
+  if(expTitle) expTitle.textContent = '📤 ' + (L.exp_title || 'Export Farm Data');
+  const expBtns = document.querySelectorAll('#export-sheet [data-exp]');
+  expBtns.forEach(btn => {
+    const key = btn.getAttribute('data-exp');
+    const lbl = btn.querySelector('.exp-lbl');
+    const sub = btn.querySelector('.exp-sub');
+    if(lbl && L[key]) lbl.textContent = L[key];
+    if(sub && L[key+'_sub']) sub.textContent = L[key+'_sub'];
+  });
+
+  // ── Profile settings labels ──
+  const profSecs = document.querySelectorAll('#scr-profile [style*="text-transform:uppercase"]');
+  // Update settings group header
+  const settingsLbls = document.querySelectorAll('.sl-lbl');
+  const settingsSubs = document.querySelectorAll('.sl-sub');
+  const settingsMap = [
+    ['prof_dark','prof_dark_sub'],
+    ['prof_notif','prof_notif_sub'],
+    ['prof_lang',null],
+    ['prof_contact',null],
+    ['prof_export_data',null],
+    ['prof_clear',null],
+    ['prof_about',null],
+    ['prof_privacy',null],
+  ];
+  settingsLbls.forEach((el, i) => {
+    if(settingsMap[i] && L[settingsMap[i][0]]) el.textContent = L[settingsMap[i][0]];
+  });
+  settingsSubs.forEach((el, i) => {
+    if(settingsMap[i] && settingsMap[i][1] && L[settingsMap[i][1]]) el.textContent = L[settingsMap[i][1]];
+  });
+
+  // ── Language label in profile ──
+  const langNames = {en:'English',kn:'ಕನ್ನಡ',hi:'हिंदी',te:'తెలుగు',ta:'தமிழ்'};
+  const ll = document.getElementById('prof-lang-lbl');
+  if(ll) ll.textContent = langNames[lang] || 'English';
+
+  // Update html lang attr
+  document.documentElement.lang = lang;
+}
+
+// ─────────────────────────────────────────────
+// FIX 3 — FIXED setAppLang (was broken before)
+// ─────────────────────────────────────────────
+function setAppLang(lang) {
+  curLang = lang;
+  LS.set('srf_lang', lang);
+
+  // Close any open language modal
+  document.querySelectorAll('.__lang-modal').forEach(el => el.remove());
+
+  // Apply i18n globally
+  applyI18nGlobal(lang);
+
+  // Also apply onboarding labels if still on setup
+  if(typeof applySetupLabels === 'function') applySetupLabels();
+
+  showToast((I18N[lang] || I18N.en).toast_lang || 'Language updated ✓');
+}
+
+// ─────────────────────────────────────────────
+// FIX 4 — FIXED changeLanguage() — 5 languages, no freeze
+// ─────────────────────────────────────────────
+function changeLanguage() {
+  // Remove any existing modal to prevent duplicates (freeze fix)
+  document.querySelectorAll('.__lang-modal').forEach(el => el.remove());
+
+  const L = I18N[curLang] || I18N.en;
+  const langOpts = [
+    {code:'en', flag:'🇮🇳', name:'English', native:'English'},
+    {code:'kn', flag:'🏡', name:'Kannada', native:'ಕನ್ನಡ'},
+    {code:'hi', flag:'🕌', name:'Hindi', native:'हिंदी'},
+    {code:'te', flag:'🌾', name:'Telugu', native:'తెలుగు'},
+    {code:'ta', flag:'🌺', name:'Tamil', native:'தமிழ்'},
+  ];
+
+  const opts = langOpts.map(o =>
+    `<div onclick="setAppLang('${o.code}');this.closest('.__lang-modal').remove();"
+      style="padding:14px 16px;font-size:15px;font-weight:600;color:var(--text);cursor:pointer;
+      border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;transition:.1s;"
+      onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background=''"
+    >${o.flag} ${o.native} <small style="color:var(--muted);font-size:11px;margin-left:4px;">${o.name}</small>
+    ${curLang===o.code ? '<span style="color:var(--g3);margin-left:auto;font-size:16px;">✓</span>' : ''}
+    </div>`
+  ).join('');
+
+  const m = document.createElement('div');
+  m.className = '__lang-modal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;display:flex;align-items:flex-end;';
+  m.innerHTML = `<div style="width:100%;max-width:430px;margin:0 auto;background:var(--card);border-radius:20px 20px 0 0;padding-bottom:env(safe-area-inset-bottom,24px);">
+    <div style="padding:16px;text-align:center;font-size:15px;font-weight:700;color:var(--g1);border-bottom:1px solid var(--border);">${L.lang_title || 'Choose Language'}</div>
+    ${opts}
+    <button onclick="this.closest('.__lang-modal').remove()"
+      style="width:calc(100% - 32px);margin:12px 16px 0;padding:12px;border-radius:12px;
+      border:1.5px solid var(--border);background:none;font-size:14px;cursor:pointer;color:var(--muted);">
+      ${L.lang_cancel || 'Cancel'}
+    </button>
+  </div>`;
+
+  // Tap-outside to close
+  m.addEventListener('click', (e) => { if(e.target === m) m.remove(); });
+  document.body.appendChild(m);
+}
+
+// ─────────────────────────────────────────────
+// FIX 5 — WEATHER: Use actual stored coordinates
+// ─────────────────────────────────────────────
+const WEATHER_ICON_MAP = {0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'❄️',80:'🌦️',81:'🌦️',82:'⛈️',95:'⛈️',96:'⛈️',99:'⛈️'};
+const WEATHER_DESC_MAP = {0:'Clear sky',1:'Mostly clear',2:'Partly cloudy',3:'Overcast',45:'Foggy',48:'Foggy',51:'Light drizzle',61:'Light rain',63:'Moderate rain',65:'Heavy rain',71:'Light snow',80:'Rain showers',95:'Thunderstorm',99:'Heavy thunderstorm'};
+
+async function fetchWeather() {
+  const L = I18N[curLang] || I18N.en;
+  const wcDesc = document.getElementById('wc-desc');
+  if(wcDesc) wcDesc.textContent = L.wc_loading || 'Fetching weather...';
+
+  // Read stored user location (set during onboarding or resolved via geo)
+  const ud = LS.get('srf_user') || {};
+  let lat = ud.lat || null;
+  let lon = ud.lon || null;
+  let locationName = ud.locationName || ud.village || 'Your Location';
+
+  // Fallback: use stored geo cache
+  const geoCache = LS.get('srfm_geo');
+  if(!lat && geoCache) { lat = geoCache.lat; lon = geoCache.lon; locationName = geoCache.name; }
+
+  // Last resort fallback (Bengaluru — neutral, not Kalaburagi)
+  if(!lat) { lat = 12.9716; lon = 77.5946; locationName = 'Bengaluru'; }
+
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    const w = d.current_weather;
+
+    document.getElementById('wc-temp').textContent = Math.round(w.temperature) + '°C';
+    document.getElementById('wc-icon').textContent = WEATHER_ICON_MAP[w.weathercode] || '⛅';
+    if(wcDesc) wcDesc.textContent = WEATHER_DESC_MAP[w.weathercode] || 'Weather updated';
+    document.getElementById('wc-sub').textContent = locationName + ' • ' + (L.wc_live || 'Live');
+
+    // Cache it
+    LS.set('srfm_weather_cache', { temp: w.temperature, code: w.weathercode, loc: locationName, ts: Date.now() });
+
+    const heatAlert = document.getElementById('heat-alert');
+    if(heatAlert) heatAlert.style.display = w.temperature > 34 ? 'flex' : 'none';
+  } catch(e) {
+    // Try cache
+    const cache = LS.get('srfm_weather_cache');
+    if(cache && (Date.now() - cache.ts) < 3600000) {
+      document.getElementById('wc-temp').textContent = Math.round(cache.temp) + '°C';
+      document.getElementById('wc-icon').textContent = WEATHER_ICON_MAP[cache.code] || '⛅';
+      if(wcDesc) wcDesc.textContent = (WEATHER_DESC_MAP[cache.code] || 'Cached') + ' (cached)';
+      document.getElementById('wc-sub').textContent = (cache.loc || locationName) + ' • Cached';
+    } else {
+      document.getElementById('wc-temp').textContent = '--°C';
+      if(wcDesc) wcDesc.textContent = L.wc_offline || 'Offline – weather unavailable';
+    }
+  }
+}
+
+// Geocode: reverse lat/lon to city name using open-meteo's timezone endpoint
+async function reverseGeocodeCity(lat, lon) {
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`, {
+      headers: {'Accept-Language':'en', 'User-Agent':'SRFeedsApp/4.0'}
+    });
+    const d = await r.json();
+    const city = d.address?.city || d.address?.town || d.address?.village || d.address?.county || 'Your Location';
+    const state = d.address?.state || '';
+    return state ? `${city}, ${state}` : city;
+  } catch(e) {
+    return 'Your Location';
+  }
+}
+
+// ─────────────────────────────────────────────
+// FIX 6 — GEOLOCATION CAPTURE during setup
+// ─────────────────────────────────────────────
+function requestLocationPermission() {
+  return new Promise((resolve) => {
+    if(!('geolocation' in navigator)) { resolve(null); return; }
+    const L = I18N[curLang] || I18N.en;
+
+    // Show a friendly prompt first
+    const m = document.createElement('div');
+    m.className = '__perm-modal';
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9500;display:flex;align-items:center;justify-content:center;padding:24px;';
+    m.innerHTML = `<div style="background:var(--card);border-radius:20px;padding:28px 24px;max-width:340px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+      <div style="font-size:48px;margin-bottom:14px;">${L.ob_loc_title || '📍 Enable Location'}</div>
+      <div style="font-size:15px;font-weight:700;color:var(--g1);margin-bottom:10px;">Allow Location Access</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:20px;">${L.ob_loc_body || 'Allow SR FEEDS to detect your location for accurate local weather?'}</div>
+      <div style="display:flex;gap:10px;">
+        <button id="loc-skip-btn" style="flex:1;padding:12px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg);font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);">${L.ob_loc_skip || 'Skip'}</button>
+        <button id="loc-allow-btn" style="flex:1;padding:12px;border-radius:12px;border:none;background:var(--g2);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">${L.ob_loc_allow || 'Allow'}</button>
+      </div>
+    </div>`;
+
+    document.body.appendChild(m);
+
+    document.getElementById('loc-skip-btn').onclick = () => { m.remove(); resolve(null); };
+    document.getElementById('loc-allow-btn').onclick = () => {
+      m.remove();
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          const name = await reverseGeocodeCity(lat, lon);
+          LS.set('srfm_geo', { lat, lon, name });
+          resolve({ lat, lon, name });
+        },
+        () => resolve(null),
+        { timeout: 10000, maximumAge: 300000 }
+      );
+    };
+  });
+}
+
+function requestNotificationPermission() {
+  return new Promise((resolve) => {
+    if(!('Notification' in window)) { resolve(false); return; }
+    if(Notification.permission === 'granted') { resolve(true); return; }
+    if(Notification.permission === 'denied') { resolve(false); return; }
+
+    const L = I18N[curLang] || I18N.en;
+    const m = document.createElement('div');
+    m.className = '__perm-modal';
+    m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9500;display:flex;align-items:center;justify-content:center;padding:24px;';
+    m.innerHTML = `<div style="background:var(--card);border-radius:20px;padding:28px 24px;max-width:340px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+      <div style="font-size:48px;margin-bottom:14px;">🔔</div>
+      <div style="font-size:15px;font-weight:700;color:var(--g1);margin-bottom:10px;">${L.ob_notif_title || 'Enable Notifications'}</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:20px;">${L.ob_notif_body || 'Get feed reminders, vaccination alerts and weather warnings?'}</div>
+      <div style="display:flex;gap:10px;">
+        <button id="notif-skip-btn" style="flex:1;padding:12px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg);font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);">${L.ob_notif_skip || 'Skip'}</button>
+        <button id="notif-allow-btn" style="flex:1;padding:12px;border-radius:12px;border:none;background:var(--g2);color:#fff;font-size:13px;font-weight:700;cursor:pointer;">${L.ob_notif_allow || 'Allow'}</button>
+      </div>
+    </div>`;
+
+    document.body.appendChild(m);
+    document.getElementById('notif-skip-btn').onclick = () => { m.remove(); resolve(false); };
+    document.getElementById('notif-allow-btn').onclick = () => {
+      m.remove();
+      Notification.requestPermission().then(perm => {
+        resolve(perm === 'granted');
+        if(perm === 'granted') LS.set('srfeeds_notif_pref', true);
+      });
+    };
+  });
+}
+
+// ─────────────────────────────────────────────
+// FIX 7 — OVERRIDE submitSetup to capture location + notif
+// ─────────────────────────────────────────────
+async function submitSetup() {
+  const L = I18N[curLang] || I18N.en;
+  const name = document.getElementById('setup-name')?.value.trim();
+  const phone = document.getElementById('setup-phone')?.value.trim();
+  const village = document.getElementById('setup-village')?.value.trim();
+  const size = document.getElementById('setup-size')?.value;
+
+  if(!name || name.length < 2) { showToast(L.fill_required || 'Please fill required fields'); return; }
+  if(!selectedFarmerType) { showToast(L.select_type || 'Please select your farmer type'); return; }
+
+  // Disable button to prevent double submit
+  const btn = document.getElementById('setup-submit');
+  if(btn) { btn.disabled = true; btn.textContent = '⏳ Setting up...'; }
+
+  // Step 1: Request Location
+  const geoResult = await requestLocationPermission();
+  const L2 = I18N[curLang] || I18N.en;
+  if(geoResult) showToast(L2.toast_location_ok || 'Location captured ✓');
+  else if(geoResult === null && village) showToast(L2.toast_location_denied || 'Using manual city');
+
+  // Step 2: Request Notifications
+  await requestNotificationPermission();
+
+  // Build user profile
+  const user = {
+    name, phone, village,
+    farmerType: selectedFarmerType,
+    farmSize: size || '',
+    lang: curLang,
+    joinedAt: new Date().toISOString(),
+    lat: geoResult ? geoResult.lat : null,
+    lon: geoResult ? geoResult.lon : null,
+    locationName: geoResult ? geoResult.name : (village || null),
+  };
+
+  // If geo got a name but no village entered, use it
+  if(geoResult && !user.village) user.village = geoResult.name;
+
+  LS.set('srf_user', user);
+
+  // Cache geo for weather
+  if(geoResult) LS.set('srfm_geo', { lat: geoResult.lat, lon: geoResult.lon, name: geoResult.name });
+
+  document.getElementById('onboarding').style.display = 'none';
+  startApp();
+}
+
+// ─────────────────────────────────────────────
+// FIX 8 — TRACKER DATE FILTER
+// ─────────────────────────────────────────────
+let trDateFilter = 'all';
+let trCustomFrom = '';
+let trCustomTo = '';
+
+// Inject date filter UI into tracker screen (runs after DOM ready)
+function injectTrackerDateFilter() {
+  const searchRow = document.querySelector('#scr-tracker > div:nth-child(3)');
+  if(!searchRow || document.getElementById('tr-date-filter')) return; // Already injected
+
+  const L = I18N[curLang] || I18N.en;
+  const filterBar = document.createElement('div');
+  filterBar.style.cssText = 'padding:0 16px 8px;display:flex;gap:8px;align-items:center;overflow-x:auto;scrollbar-width:none;';
+  filterBar.innerHTML = `
+    <span style="font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap;">${L.tr_date_filter || 'Date Filter'}:</span>
+    <select id="tr-date-filter"
+      style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);
+      font-size:11px;font-weight:700;color:var(--text);outline:none;cursor:pointer;flex-shrink:0;"
+      onchange="handleDateFilterChange(this.value)">
+      <option value="all">${L.df_all||'All Time'}</option>
+      <option value="today">${L.df_today||'Today'}</option>
+      <option value="yesterday">${L.df_yesterday||'Yesterday'}</option>
+      <option value="7">${L.df_7||'Last 7 Days'}</option>
+      <option value="30">${L.df_30||'Last 30 Days'}</option>
+      <option value="month">${L.df_month||'This Month'}</option>
+      <option value="custom">${L.df_custom||'Custom Range'}</option>
+    </select>
+    <div id="tr-custom-range" style="display:none;gap:6px;align-items:center;flex-shrink:0;">
+      <input type="date" id="tr-from-date" style="padding:5px 8px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);font-size:11px;color:var(--text);outline:none;"
+        onchange="trCustomFrom=this.value;applyTrackerFilters()"/>
+      <span style="font-size:11px;color:var(--muted);">→</span>
+      <input type="date" id="tr-to-date" style="padding:5px 8px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);font-size:11px;color:var(--text);outline:none;"
+        onchange="trCustomTo=this.value;applyTrackerFilters()"/>
+    </div>`;
+
+  // Insert after the search/export row
+  const parent = searchRow.parentNode;
+  parent.insertBefore(filterBar, searchRow.nextSibling);
+}
+
+function handleDateFilterChange(val) {
+  trDateFilter = val;
+  const customRow = document.getElementById('tr-custom-range');
+  if(customRow) customRow.style.display = val === 'custom' ? 'flex' : 'none';
+  if(val !== 'custom') applyTrackerFilters();
+}
+
+function getDateFilterRange() {
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  if(trDateFilter === 'all') return null;
+  if(trDateFilter === 'today') return { from: today, to: today };
+  if(trDateFilter === 'yesterday') {
+    const y = new Date(now); y.setDate(y.getDate() - 1);
+    const ys = y.toISOString().split('T')[0];
+    return { from: ys, to: ys };
+  }
+  if(trDateFilter === '7') {
+    const d = new Date(now); d.setDate(d.getDate() - 6);
+    return { from: d.toISOString().split('T')[0], to: today };
+  }
+  if(trDateFilter === '30') {
+    const d = new Date(now); d.setDate(d.getDate() - 29);
+    return { from: d.toISOString().split('T')[0], to: today };
+  }
+  if(trDateFilter === 'month') {
+    const from = today.substring(0,7) + '-01';
+    return { from, to: today };
+  }
+  if(trDateFilter === 'custom') {
+    if(trCustomFrom || trCustomTo) return { from: trCustomFrom||'2000-01-01', to: trCustomTo||today };
+    return null;
+  }
+  return null;
+}
+
+// Override applyTrackerFilters to include date filtering
+const _origApplyTrackerFilters = applyTrackerFilters;
+applyTrackerFilters = function() {
+  const q = (document.getElementById('tr-search')?.value || '').toLowerCase();
+  const range = getDateFilterRange();
+  let list = trRecords;
+  if(trCat !== 'all') list = list.filter(r => r.category === trCat);
+  if(q) list = list.filter(r => JSON.stringify(r.data).toLowerCase().includes(q) || r.category.includes(q));
+  if(range) {
+    list = list.filter(r => {
+      const d = r.data.date || '';
+      if(!d) return trDateFilter === 'all';
+      return d >= range.from && d <= range.to;
+    });
+  }
+  list = [...list].sort((a, b) => b.id - a.id);
+  const count = document.getElementById('tr-count');
+  if(count) count.textContent = list.length + ' record' + (list.length !== 1 ? 's' : '');
+
+  // Update stats with filtered data
+  updateTrackerDashFiltered(list, range);
+  renderTrackerList(list);
+};
+
+function updateTrackerDashFiltered(list, range) {
+  const today = new Date().toISOString().split('T')[0];
+  const feedEl = document.getElementById('ds-feed');
+  if(feedEl) feedEl.textContent = list.filter(r => r.category === 'feed').length;
+  const todayRange = range || { from: today, to: today };
+  const todayEggs = list
+    .filter(r => r.category === 'eggs' && r.data.date === today)
+    .reduce((s, r) => s + (parseFloat(r.data.total_eggs) || 0), 0);
+  const eggsEl = document.getElementById('ds-eggs');
+  if(eggsEl) eggsEl.textContent = todayEggs || 0;
+  const totalExp = list.filter(r => r.category === 'expense').reduce((s, r) => s + (parseFloat(r.data.amount) || 0), 0);
+  const expEl = document.getElementById('ds-expense');
+  if(expEl) expEl.textContent = '₹' + (totalExp >= 1000 ? Math.round(totalExp / 1000) + 'K' : Math.round(totalExp));
+}
+
+// ─────────────────────────────────────────────
+// FIX 9 — EXPORT: CSV (improved), XLSX (XML), PDF (print)
+// ─────────────────────────────────────────────
+
+// Helper: get currently filtered records for export
+function getExportRecords() {
+  const q = (document.getElementById('tr-search')?.value || '').toLowerCase();
+  const range = getDateFilterRange();
+  let list = trRecords;
+  if(trCat !== 'all') list = list.filter(r => r.category === trCat);
+  if(q) list = list.filter(r => JSON.stringify(r.data).toLowerCase().includes(q) || r.category.includes(q));
+  if(range) {
+    list = list.filter(r => {
+      const d = r.data.date || '';
+      return !d ? false : d >= range.from && d <= range.to;
+    });
+  }
+  return [...list].sort((a, b) => (a.data.date || '').localeCompare(b.data.date || ''));
+}
+
+const _dateStr = () => new Date().toISOString().split('T')[0];
+
+// Fixed CSV export
+function exportCSV() {
+  const L = I18N[curLang] || I18N.en;
+  const list = getExportRecords();
+  if(!list.length) { showToast(L.toast_no_records || 'No records to export'); return; }
+
+  // UTF-8 BOM for Excel compatibility
+  const BOM = '\uFEFF';
+  const rows = ['Category,Date,Title,Value,Details'];
+  list.forEach(r => {
+    const c = TR_CATS.find(x => x.id === r.category) || { label: r.category };
+    const title = getTrTitle(r).replace(/"/g, '""');
+    const value = getTrValue(r).replace(/"/g, '""');
+    const date = r.data.date || '';
+    // All fields as detail
+    const detail = Object.entries(r.data)
+      .filter(([k]) => k !== 'date')
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(' | ').replace(/"/g, '""');
+    rows.push(`"${c.label}","${date}","${title}","${value}","${detail}"`);
+  });
+
+  dlFile('tracker_export_' + _dateStr() + '.csv', BOM + rows.join('\n'), 'text/csv;charset=utf-8');
+  showToast(L.toast_csv || 'CSV exported ✓');
+}
+
+// NEW: XLSX export via SpreadsheetML XML (opens natively in Excel/Sheets)
+function exportXLSX() {
+  const L = I18N[curLang] || I18N.en;
+  const list = getExportRecords();
+  if(!list.length) { showToast(L.toast_no_records || 'No records to export'); return; }
+
+  const esc = (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+  let rows = '';
+  // Header row
+  rows += '<Row ss:StyleID="header"><Cell><Data ss:Type="String">Category</Data></Cell><Cell><Data ss:Type="String">Date</Data></Cell><Cell><Data ss:Type="String">Title</Data></Cell><Cell><Data ss:Type="String">Value</Data></Cell><Cell><Data ss:Type="String">Details</Data></Cell></Row>\n';
+
+  list.forEach(r => {
+    const c = TR_CATS.find(x => x.id === r.category) || { label: r.category };
+    const title = getTrTitle(r);
+    const value = getTrValue(r).replace(/₹/g,'Rs.');
+    const date = r.data.date || '';
+    const detail = Object.entries(r.data).filter(([k]) => k !== 'date').map(([k,v]) => `${k}: ${v}`).join(' | ');
+    rows += `<Row><Cell><Data ss:Type="String">${esc(c.label)}</Data></Cell><Cell><Data ss:Type="String">${esc(date)}</Data></Cell><Cell><Data ss:Type="String">${esc(title)}</Data></Cell><Cell><Data ss:Type="String">${esc(value)}</Data></Cell><Cell><Data ss:Type="String">${esc(detail)}</Data></Cell></Row>\n`;
+  });
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:x="urn:schemas-microsoft-com:office:excel">
+<Styles>
+  <Style ss:ID="header">
+    <Font ss:Bold="1"/>
+    <Interior ss:Color="#0d4a2e" ss:Pattern="Solid"/>
+    <Font ss:Color="#FFFFFF" ss:Bold="1"/>
+  </Style>
+</Styles>
+<Worksheet ss:Name="Farm Records">
+<Table>
+${rows}
+</Table>
+</Worksheet>
+</Workbook>`;
+
+  dlFile('tracker_export_' + _dateStr() + '.xlsx', xml, 'application/vnd.ms-excel');
+  showToast(L.toast_xlsx || 'Excel exported ✓');
+}
+
+// NEW: PDF export via browser print
+function exportPDF() {
+  const L = I18N[curLang] || I18N.en;
+  const list = getExportRecords();
+  if(!list.length) { showToast(L.toast_no_records || 'No records to export'); return; }
+
+  const ud = LS.get('srf_user') || {};
+  const dateRange = trDateFilter !== 'all' ? ` (${document.getElementById('tr-date-filter')?.selectedOptions[0]?.textContent || ''})` : '';
+
+  const rows = list.map(r => {
+    const c = TR_CATS.find(x => x.id === r.category) || { label: r.category, icon: '📋' };
+    const detail = Object.entries(r.data).filter(([k,v]) => v && k !== 'date').map(([k,v]) => `<span style="color:#607060">${k}:</span> ${v}`).join(' &nbsp;|&nbsp; ');
+    return `<tr>
+      <td>${c.icon} ${c.label}</td>
+      <td>${r.data.date || '—'}</td>
+      <td><strong>${getTrTitle(r)}</strong></td>
+      <td style="text-align:right;font-weight:700;color:#0d4a2e">${getTrValue(r)}</td>
+      <td style="font-size:11px;color:#607060">${detail}</td>
+    </tr>`;
+  }).join('');
+
+  const expStats = {
+    feed: list.filter(r => r.category === 'feed').length,
+    eggs: list.filter(r => r.category === 'eggs').reduce((s,r) => s + (parseFloat(r.data.total_eggs)||0), 0),
+    expense: list.filter(r => r.category === 'expense').reduce((s,r) => s + (parseFloat(r.data.amount)||0), 0),
+  };
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+<title>SR FEEDS Farm Report – ${_dateStr()}</title>
+<style>
+  body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#111;margin:0;padding:20px;}
+  .header{background:#0a3520;color:#fff;padding:20px 24px;border-radius:8px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;}
+  .header h1{margin:0;font-size:20px;letter-spacing:1px;}
+  .header p{margin:4px 0 0;font-size:11px;opacity:.7;}
+  .gold{color:#c9a227;}
+  .stats{display:flex;gap:12px;margin-bottom:16px;}
+  .stat{flex:1;background:#e8f5ee;border:1px solid #d4e4d4;border-radius:8px;padding:10px;text-align:center;}
+  .stat-num{font-size:22px;font-weight:700;color:#0d4a2e;}
+  .stat-lbl{font-size:10px;color:#607060;text-transform:uppercase;letter-spacing:.5px;}
+  table{width:100%;border-collapse:collapse;font-size:11px;}
+  th{background:#0a3520;color:#c9a227;padding:8px 10px;text-align:left;font-size:10px;letter-spacing:.3px;text-transform:uppercase;}
+  td{padding:7px 10px;border-bottom:1px solid #f0f0f0;}
+  tr:nth-child(even) td{background:#f8faf8;}
+  .footer{margin-top:24px;text-align:center;font-size:10px;color:#aaa;border-top:1px solid #eee;padding-top:12px;}
+  @media print{body{padding:10px;}button{display:none!important;}}
+</style></head><body>
+<div class="header">
+  <div><h1>SR FEEDS <span class="gold">Farm Report</span></h1>
+  <p>Farmer: ${ud.name||'Farmer'} • ${ud.farmerType||''} • Generated: ${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</p>
+  <p>${ud.village||ud.locationName||''} ${dateRange}</p></div>
+  <div style="text-align:right"><div style="font-size:28px">📋</div><div style="font-size:10px;opacity:.6">Total: ${list.length} records</div></div>
+</div>
+<div class="stats">
+  <div class="stat"><div class="stat-num">${list.length}</div><div class="stat-lbl">Records</div></div>
+  <div class="stat"><div class="stat-num">${expStats.feed}</div><div class="stat-lbl">Feed Logs</div></div>
+  <div class="stat"><div class="stat-num">${Math.round(expStats.eggs)}</div><div class="stat-lbl">Eggs</div></div>
+  <div class="stat"><div class="stat-num">₹${Math.round(expStats.expense).toLocaleString('en-IN')}</div><div class="stat-lbl">Expenses</div></div>
+</div>
+<button onclick="window.print()" style="margin-bottom:16px;padding:10px 20px;background:#0d4a2e;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🖨️ Print / Save as PDF</button>
+<table>
+  <thead><tr><th>Category</th><th>Date</th><th>Title</th><th>Value</th><th>Details</th></tr></thead>
+  <tbody>${rows}</tbody>
+</table>
+<div class="footer">SR FEEDS Unified Edition v4.0 &nbsp;•&nbsp; Science • Nutrition • Growth &nbsp;•&nbsp; Report generated ${new Date().toLocaleString('en-IN')}</div>
+</body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 500);
+  showToast(L.toast_pdf || 'PDF report opened ✓');
+}
+
+// Fixed JSON backup export
+function exportJSON() {
+  const L = I18N[curLang] || I18N.en;
+  const list = getExportRecords();
+  if(!list.length) { showToast(L.toast_no_records || 'No records to export'); return; }
+  const data = { exported: new Date().toISOString(), filter: trDateFilter, records: list };
+  dlFile('srfeeds_backup_' + _dateStr() + '.json', JSON.stringify(data, null, 2), 'application/json');
+  showToast(L.toast_json || 'JSON backup exported ✓');
+}
+
+// ─────────────────────────────────────────────
+// FIX 10 — UPGRADE EXPORT SHEET HTML
+//           Add XLSX + PDF buttons with data-exp attrs
+// ─────────────────────────────────────────────
+function rebuildExportSheet() {
+  const sheet = document.querySelector('#export-sheet .sheet');
+  if(!sheet || sheet.querySelector('[data-exp]')) return; // Already updated
+
+  const L = I18N[curLang] || I18N.en;
+  sheet.innerHTML = `
+    <button class="sheet-close" onclick="closeModal('export-sheet')">✕</button>
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="exp-sheet-title">📤 ${L.exp_title||'Export Farm Data'}</div>
+
+    <div data-exp="exp_csv" onclick="exportCSV()" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;border:1px solid var(--border);cursor:pointer;margin-bottom:10px;background:var(--bg);transition:.1s;" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background='var(--bg)'">
+      <div style="width:44px;height:44px;border-radius:10px;background:#e8f5ee;display:flex;align-items:center;justify-content:center;font-size:22px;">📊</div>
+      <div style="flex:1;"><div class="exp-lbl" style="font-size:14px;font-weight:700;color:var(--g1);">${L.exp_csv||'Export as CSV'}</div><div class="exp-sub" style="font-size:11px;color:var(--muted);">${L.exp_csv_sub||'Open in Excel or Google Sheets'}</div></div>
+      <span style="color:var(--muted);">›</span>
+    </div>
+
+    <div data-exp="exp_xlsx" onclick="exportXLSX()" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;border:1px solid var(--border);cursor:pointer;margin-bottom:10px;background:var(--bg);transition:.1s;" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background='var(--bg)'">
+      <div style="width:44px;height:44px;border-radius:10px;background:#e8f5ee;display:flex;align-items:center;justify-content:center;font-size:22px;">📗</div>
+      <div style="flex:1;"><div class="exp-lbl" style="font-size:14px;font-weight:700;color:var(--g1);">${L.exp_xlsx||'Export as Excel (.xlsx)'}</div><div class="exp-sub" style="font-size:11px;color:var(--muted);">${L.exp_xlsx_sub||'Native Excel workbook format'}</div></div>
+      <span style="color:var(--muted);">›</span>
+    </div>
+
+    <div data-exp="exp_pdf" onclick="exportPDF()" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;border:1px solid var(--border);cursor:pointer;margin-bottom:10px;background:var(--bg);transition:.1s;" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background='var(--bg)'">
+      <div style="width:44px;height:44px;border-radius:10px;background:#fef2f2;display:flex;align-items:center;justify-content:center;font-size:22px;">📄</div>
+      <div style="flex:1;"><div class="exp-lbl" style="font-size:14px;font-weight:700;color:var(--g1);">${L.exp_pdf||'Export as PDF Report'}</div><div class="exp-sub" style="font-size:11px;color:var(--muted);">${L.exp_pdf_sub||'Print-ready farm report'}</div></div>
+      <span style="color:var(--muted);">›</span>
+    </div>
+
+    <div data-exp="exp_json" onclick="exportJSON()" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;border:1px solid var(--border);cursor:pointer;margin-bottom:10px;background:var(--bg);transition:.1s;" onmouseover="this.style.background='var(--accent)'" onmouseout="this.style.background='var(--bg)'">
+      <div style="width:44px;height:44px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;font-size:22px;">🗂️</div>
+      <div style="flex:1;"><div class="exp-lbl" style="font-size:14px;font-weight:700;color:var(--g1);">${L.exp_json||'Full Backup (JSON)'}</div><div class="exp-sub" style="font-size:11px;color:var(--muted);">${L.exp_json_sub||'Complete data backup'}</div></div>
+      <span style="color:var(--muted);">›</span>
+    </div>
+
+    <div style="background:var(--accent);border-radius:10px;padding:10px 12px;font-size:11px;color:var(--g2);line-height:1.6;margin-top:4px;">ℹ️ All exports download locally. No data sent to any server. Exports respect your current date filter.</div>`;
+}
+
+// ─────────────────────────────────────────────
+// FIX 11 — HOOK INTO startApp to apply all fixes
+// ─────────────────────────────────────────────
+const _origStartApp = startApp;
+startApp = function() {
+  _origStartApp();
+  // Apply language globally after app starts
+  setTimeout(() => {
+    applyI18nGlobal(curLang);
+    injectTrackerDateFilter();
+    rebuildExportSheet();
+  }, 100);
+};
+
+// Apply to returning users immediately
+document.addEventListener('DOMContentLoaded', () => {
+  const user = LS.get('srf_user');
+  if(user && user.name) {
+    // Returning user — language will be applied when startApp runs
+    curLang = LS.get('srf_lang', 'en');
+  }
+});
+
+// ─────────────────────────────────────────────
+// FIX 12 — PATCH switchTab to inject date filter when switching
+// ─────────────────────────────────────────────
+const _origSwitchTab = switchTab;
+switchTab = function(tab, btn) {
+  _origSwitchTab(tab, btn);
+  if(tab === 'tracker') {
+    setTimeout(() => {
+      injectTrackerDateFilter();
+    }, 50);
+  }
+};
+
+// ─────────────────────────────────────────────
+// INIT: Apply language on page load for returning users
+// ─────────────────────────────────────────────
+window.addEventListener('load', () => {
+  curLang = LS.get('srf_lang', 'en');
+  const user = LS.get('srf_user');
+  if(user && user.name) {
+    // Will be applied when startApp fires, but in case it already ran
+    setTimeout(() => {
+      if(document.getElementById('app').style.display !== 'none') {
+        applyI18nGlobal(curLang);
+        injectTrackerDateFilter();
+        rebuildExportSheet();
+      }
+    }, 300);
+  }
+});
+
+console.log('✅ SR FEEDS Fix Patch v4.1 loaded — Language, Weather, Location, Export, DateFilter, ProfileFreeze all fixed.');
+
 </script>
 </body>
 </html>
