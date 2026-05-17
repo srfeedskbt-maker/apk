@@ -520,7 +520,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
       <div class="wc-info">
         <div class="wc-temp" id="wc-temp">-- °C</div>
         <div class="wc-desc" id="wc-desc">Fetching weather...</div>
-        <div class="wc-sub" id="wc-sub">Kalaburagi, Karnataka</div>
+        <div class="wc-sub" id="wc-sub">Your Location</div>
       </div>
       <button class="wc-refresh" onclick="fetchWeather()">⟳ Refresh</button>
     </div>
@@ -2985,35 +2985,71 @@ async function fetchWeather() {
   }
 }
 
-// Geocode: reverse lat/lon to city name using open-meteo's timezone endpoint
+// Geocode: reverse lat/lon to city name — timeout-safe, WebView-safe
 async function reverseGeocodeCity(lat, lon) {
   try {
-    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`, {
-      headers: {'Accept-Language':'en', 'User-Agent':'SRFeedsApp/4.0'}
-    });
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 6000); // hard 6s timeout
+    // NOTE: No custom User-Agent — it causes CORS preflight failures in Android WebView
+    const r = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10&accept-language=en`,
+      { signal: ctrl.signal }
+    );
+    clearTimeout(tid);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
-    const city = d.address?.city || d.address?.town || d.address?.village || d.address?.county || 'Your Location';
-    const state = d.address?.state || '';
-    return state ? `${city}, ${state}` : city;
+    const city = (d.address && (d.address.city || d.address.town || d.address.village || d.address.county)) || null;
+    const state = (d.address && d.address.state) || '';
+    if (!city) return null; // signal caller to use manual fallback
+    return state ? (city + ', ' + state) : city;
   } catch(e) {
-    return 'Your Location';
+    return null; // caller handles null gracefully
   }
 }
 
 // ─────────────────────────────────────────────
 // FIX 6 — GEOLOCATION CAPTURE during setup
+//          v4.2: timeout-safe, WebView-safe, never hangs
 // ─────────────────────────────────────────────
+
+// Internal: get GPS coords with a hard timeout wrapper (Promise-level)
+function _getGPSWithTimeout(timeoutMs) {
+  return new Promise((resolve) => {
+    if (!('geolocation' in navigator)) { resolve(null); return; }
+
+    let settled = false;
+    const done = (val) => { if (!settled) { settled = true; resolve(val); } };
+
+    // Master safety net — resolves null if geolocation never responds
+    const masterTimer = setTimeout(() => done(null), timeoutMs);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        clearTimeout(masterTimer);
+        done({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+      },
+      () => {
+        clearTimeout(masterTimer);
+        done(null);
+      },
+      { timeout: Math.max(timeoutMs - 1000, 5000), maximumAge: 300000, enableHighAccuracy: false }
+    );
+  });
+}
+
 function requestLocationPermission() {
   return new Promise((resolve) => {
-    if(!('geolocation' in navigator)) { resolve(null); return; }
+    if (!('geolocation' in navigator)) { resolve(null); return; }
     const L = I18N[curLang] || I18N.en;
 
-    // Show a friendly prompt first
+    // Remove any stale modal
+    document.querySelectorAll('.__perm-modal').forEach(el => el.remove());
+
     const m = document.createElement('div');
     m.className = '__perm-modal';
     m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9500;display:flex;align-items:center;justify-content:center;padding:24px;';
     m.innerHTML = `<div style="background:var(--card);border-radius:20px;padding:28px 24px;max-width:340px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);">
-      <div style="font-size:48px;margin-bottom:14px;">${L.ob_loc_title || '📍 Enable Location'}</div>
+      <div style="font-size:48px;margin-bottom:14px;">📍</div>
       <div style="font-size:15px;font-weight:700;color:var(--g1);margin-bottom:10px;">Allow Location Access</div>
       <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:20px;">${L.ob_loc_body || 'Allow SR FEEDS to detect your location for accurate local weather?'}</div>
       <div style="display:flex;gap:10px;">
@@ -3024,31 +3060,75 @@ function requestLocationPermission() {
 
     document.body.appendChild(m);
 
-    document.getElementById('loc-skip-btn').onclick = () => { m.remove(); resolve(null); };
-    document.getElementById('loc-allow-btn').onclick = () => {
+    let resolved = false;
+    const safeResolve = (val) => {
+      if (resolved) return;
+      resolved = true;
       m.remove();
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-          const name = await reverseGeocodeCity(lat, lon);
-          LS.set('srfm_geo', { lat, lon, name });
-          resolve({ lat, lon, name });
-        },
-        () => resolve(null),
-        { timeout: 10000, maximumAge: 300000 }
-      );
+      resolve(val);
+    };
+
+    // Safety net: if neither button is ever tapped (e.g. modal stuck), auto-skip after 30s
+    const autoSkip = setTimeout(() => safeResolve(null), 30000);
+
+    document.getElementById('loc-skip-btn').onclick = () => {
+      clearTimeout(autoSkip);
+      safeResolve(null);
+    };
+
+    document.getElementById('loc-allow-btn').onclick = async () => {
+      clearTimeout(autoSkip);
+      m.remove(); // close modal immediately so UI feels responsive
+
+      // Show inline status on setup button while we wait
+      const btn = document.getElementById('setup-submit');
+      if (btn) btn.textContent = '📍 Getting location...';
+
+      try {
+        // GPS with 12s master timeout
+        const coords = await _getGPSWithTimeout(12000);
+
+        if (!coords) {
+          // GPS denied or timed out — resolve null, setup continues
+          if (!resolved) { resolved = true; resolve(null); }
+          return;
+        }
+
+        // Try reverse geocode with its own 6s timeout (already built into reverseGeocodeCity)
+        if (btn) btn.textContent = '🌍 Detecting city...';
+        const cityName = await reverseGeocodeCity(coords.lat, coords.lon);
+        const name = cityName || 'Your Location';
+
+        LS.set('srfm_geo', { lat: coords.lat, lon: coords.lon, name });
+        if (!resolved) { resolved = true; resolve({ lat: coords.lat, lon: coords.lon, name }); }
+      } catch(e) {
+        if (!resolved) { resolved = true; resolve(null); }
+      }
     };
   });
 }
 
 function requestNotificationPermission() {
   return new Promise((resolve) => {
-    if(!('Notification' in window)) { resolve(false); return; }
-    if(Notification.permission === 'granted') { resolve(true); return; }
-    if(Notification.permission === 'denied') { resolve(false); return; }
+    // WebView / Android safety: some WebViews expose 'Notification' but it never resolves
+    // Wrap everything in try/catch and add a master timeout
+    let resolved = false;
+    const safeResolve = (val) => { if (!resolved) { resolved = true; resolve(val); } };
+    const masterTimer = setTimeout(() => safeResolve(false), 15000); // 15s hard limit
+
+    try {
+      if (!('Notification' in window) || typeof Notification === 'undefined') {
+        clearTimeout(masterTimer); safeResolve(false); return;
+      }
+      if (Notification.permission === 'granted') { clearTimeout(masterTimer); safeResolve(true); return; }
+      if (Notification.permission === 'denied') { clearTimeout(masterTimer); safeResolve(false); return; }
+    } catch(e) { clearTimeout(masterTimer); safeResolve(false); return; }
 
     const L = I18N[curLang] || I18N.en;
+
+    // Remove any stale modal
+    document.querySelectorAll('.__perm-modal').forEach(el => el.remove());
+
     const m = document.createElement('div');
     m.className = '__perm-modal';
     m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9500;display:flex;align-items:center;justify-content:center;padding:24px;';
@@ -3063,64 +3143,126 @@ function requestNotificationPermission() {
     </div>`;
 
     document.body.appendChild(m);
-    document.getElementById('notif-skip-btn').onclick = () => { m.remove(); resolve(false); };
+
+    // Auto-skip if modal never gets tapped (30s)
+    const autoSkip = setTimeout(() => { m.remove(); safeResolve(false); }, 30000);
+
+    document.getElementById('notif-skip-btn').onclick = () => {
+      clearTimeout(masterTimer); clearTimeout(autoSkip);
+      m.remove(); safeResolve(false);
+    };
     document.getElementById('notif-allow-btn').onclick = () => {
+      clearTimeout(autoSkip);
       m.remove();
-      Notification.requestPermission().then(perm => {
-        resolve(perm === 'granted');
-        if(perm === 'granted') LS.set('srfeeds_notif_pref', true);
-      });
+      try {
+        const req = Notification.requestPermission();
+        // requestPermission returns a Promise in modern browsers, callback in old ones
+        if (req && typeof req.then === 'function') {
+          req.then(perm => {
+            clearTimeout(masterTimer);
+            const granted = perm === 'granted';
+            if (granted) LS.set('srfeeds_notif_pref', true);
+            safeResolve(granted);
+          }).catch(() => { clearTimeout(masterTimer); safeResolve(false); });
+        } else {
+          // Old callback style — masterTimer will clean up
+          clearTimeout(masterTimer); safeResolve(false);
+        }
+      } catch(e) { clearTimeout(masterTimer); safeResolve(false); }
     };
   });
 }
 
 // ─────────────────────────────────────────────
-// FIX 7 — OVERRIDE submitSetup to capture location + notif
+// FIX 7 — submitSetup — v4.2: NEVER FREEZES
+//   • Master 60s watchdog kills the whole flow if something goes wrong
+//   • Live UX feedback on button throughout
+//   • Works offline, with no GPS, with no network
 // ─────────────────────────────────────────────
 async function submitSetup() {
   const L = I18N[curLang] || I18N.en;
-  const name = document.getElementById('setup-name')?.value.trim();
-  const phone = document.getElementById('setup-phone')?.value.trim();
-  const village = document.getElementById('setup-village')?.value.trim();
-  const size = document.getElementById('setup-size')?.value;
+  const name    = (document.getElementById('setup-name')?.value || '').trim();
+  const phone   = (document.getElementById('setup-phone')?.value || '').trim();
+  const village = (document.getElementById('setup-village')?.value || '').trim();
+  const size    = document.getElementById('setup-size')?.value || '';
 
-  if(!name || name.length < 2) { showToast(L.fill_required || 'Please fill required fields'); return; }
-  if(!selectedFarmerType) { showToast(L.select_type || 'Please select your farmer type'); return; }
+  if (!name || name.length < 2) { showToast(L.fill_required || 'Please fill required fields'); return; }
+  if (!selectedFarmerType)      { showToast(L.select_type   || 'Please select your farmer type'); return; }
 
-  // Disable button to prevent double submit
   const btn = document.getElementById('setup-submit');
-  if(btn) { btn.disabled = true; btn.textContent = '⏳ Setting up...'; }
+  const setBtn = (txt) => { if (btn) btn.textContent = txt; };
+  const disableBtn = () => { if (btn) btn.disabled = true; };
+  const enableBtn  = () => { if (btn) { btn.disabled = false; btn.textContent = 'GET STARTED'; } };
 
-  // Step 1: Request Location
-  const geoResult = await requestLocationPermission();
-  const L2 = I18N[curLang] || I18N.en;
-  if(geoResult) showToast(L2.toast_location_ok || 'Location captured ✓');
-  else if(geoResult === null && village) showToast(L2.toast_location_denied || 'Using manual city');
+  disableBtn();
+  setBtn('⏳ Setting up...');
 
-  // Step 2: Request Notifications
-  await requestNotificationPermission();
+  // ── Master watchdog: if ANYTHING hangs more than 60s, force-complete setup ──
+  let setupDone = false;
+  const watchdog = setTimeout(() => {
+    if (!setupDone) {
+      setupDone = true;
+      enableBtn();
+      _finaliseSetup(name, phone, village, size, null);
+    }
+  }, 60000);
 
-  // Build user profile
+  try {
+    // ── Step 1: Location (max ~45s total: 30s modal + 12s GPS + 6s geocode) ──
+    setBtn('📍 Getting location...');
+    let geoResult = null;
+    try {
+      geoResult = await requestLocationPermission();
+    } catch(e) { geoResult = null; }
+
+    if (setupDone) return; // watchdog already fired
+
+    if (geoResult) {
+      showToast(L.toast_location_ok || 'Location captured ✓');
+    } else if (village) {
+      showToast(L.toast_location_denied || 'Using manual city');
+    }
+
+    // ── Step 2: Notifications ──
+    setBtn('🔔 Almost done...');
+    try { await requestNotificationPermission(); } catch(e) {}
+
+    if (setupDone) return;
+
+    clearTimeout(watchdog);
+    setupDone = true;
+    _finaliseSetup(name, phone, village, size, geoResult);
+
+  } catch(e) {
+    if (!setupDone) {
+      clearTimeout(watchdog);
+      setupDone = true;
+      enableBtn();
+      _finaliseSetup(name, phone, village, size, null);
+    }
+  }
+}
+
+// Separated so watchdog and normal path both call the same finisher
+function _finaliseSetup(name, phone, village, size, geoResult) {
   const user = {
-    name, phone, village,
+    name,
+    phone,
+    village: (geoResult && !village) ? geoResult.name : village,
     farmerType: selectedFarmerType,
-    farmSize: size || '',
+    farmSize: size,
     lang: curLang,
     joinedAt: new Date().toISOString(),
-    lat: geoResult ? geoResult.lat : null,
-    lon: geoResult ? geoResult.lon : null,
+    lat:  geoResult ? geoResult.lat  : null,
+    lon:  geoResult ? geoResult.lon  : null,
     locationName: geoResult ? geoResult.name : (village || null),
   };
 
-  // If geo got a name but no village entered, use it
-  if(geoResult && !user.village) user.village = geoResult.name;
-
   LS.set('srf_user', user);
+  if (geoResult) LS.set('srfm_geo', { lat: geoResult.lat, lon: geoResult.lon, name: geoResult.name });
 
-  // Cache geo for weather
-  if(geoResult) LS.set('srfm_geo', { lat: geoResult.lat, lon: geoResult.lon, name: geoResult.name });
-
-  document.getElementById('onboarding').style.display = 'none';
+  const ob = document.getElementById('onboarding');
+  if (ob) ob.style.display = 'none';
   startApp();
 }
 
@@ -3510,7 +3652,7 @@ window.addEventListener('load', () => {
   }
 });
 
-console.log('✅ SR FEEDS Fix Patch v4.1 loaded — Language, Weather, Location, Export, DateFilter, ProfileFreeze all fixed.');
+console.log('✅ SR FEEDS Fix Patch v4.2 loaded — Setup NEVER freezes, timeout-safe geo, WebView-safe notifications, hardcoded location removed.');
 
 </script>
 </body>
