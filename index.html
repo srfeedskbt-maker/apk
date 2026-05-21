@@ -2456,7 +2456,40 @@ function exportJSON(){
   showToast('JSON backup exported ✓');
 }
 
-function dlFile(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();URL.revokeObjectURL(a.href);}
+// ── APK-SAFE FILE DOWNLOAD ────────────────────────────────────
+// Android WebView blocks createObjectURL + <a>.click() silently.
+// Strategy: Blob URL first (browser), base64 data-URI fallback (WebView).
+function dlFile(name, content, type) {
+  try {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name; a.style.display = 'none';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  } catch(e1) {
+    try {
+      // Base64 data-URI: works in Android WebView 4.4+
+      const blob2 = new Blob([content], { type });
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const a2 = document.createElement('a');
+        a2.href = reader.result; a2.download = name;
+        document.body.appendChild(a2); a2.click();
+        document.body.removeChild(a2);
+      };
+      reader.readAsDataURL(blob2);
+    } catch(e2) {
+      // Last resort: open in new tab so user can save manually
+      try {
+        const w = window.open('', '_blank');
+        if(w) { w.document.write('<pre style="font-size:12px;word-break:break-all;">' + String(content).replace(/</g,'&lt;') + '</pre>'); w.document.close(); }
+        else showToast('⚠️ Enable pop-ups or try exporting from a browser');
+      } catch(e3) { showToast('Export not supported on this device'); }
+    }
+  }
+}
 
 // =============================================
 // PROFILE (FULL)
@@ -3475,76 +3508,111 @@ ${rows}
   showToast(L.toast_xlsx || 'Excel exported ✓');
 }
 
-// NEW: PDF export via browser print
+// ── PDF EXPORT — APK-SAFE ─────────────────────────────────────
+// Android WebView blocks window.open('','_blank').
+// Strategy: render the report in a full-screen overlay INSIDE the
+// same page, with a print button. Works everywhere.
 function exportPDF() {
   const L = I18N[curLang] || I18N.en;
   const list = getExportRecords();
   if(!list.length) { showToast(L.toast_no_records || 'No records to export'); return; }
 
   const ud = LS.get('srf_user') || {};
-  const dateRange = trDateFilter !== 'all' ? ` (${document.getElementById('tr-date-filter')?.selectedOptions[0]?.textContent || ''})` : '';
+  const dateRange = trDateFilter !== 'all'
+    ? ' (' + (document.getElementById('tr-date-filter')?.selectedOptions[0]?.textContent || '') + ')'
+    : '';
 
   const rows = list.map(r => {
     const c = TR_CATS.find(x => x.id === r.category) || { label: r.category, icon: '📋' };
-    const detail = Object.entries(r.data).filter(([k,v]) => v && k !== 'date').map(([k,v]) => `<span style="color:#607060">${k}:</span> ${v}`).join(' &nbsp;|&nbsp; ');
+    const esc = s => String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const detail = Object.entries(r.data)
+      .filter(([k,v]) => v && k !== 'date')
+      .map(([k,v]) => `<span style="color:#607060">${esc(k)}:</span> ${esc(v)}`).join(' | ');
     return `<tr>
-      <td>${c.icon} ${c.label}</td>
-      <td>${r.data.date || '—'}</td>
-      <td><strong>${getTrTitle(r)}</strong></td>
-      <td style="text-align:right;font-weight:700;color:#0d4a2e">${getTrValue(r)}</td>
-      <td style="font-size:11px;color:#607060">${detail}</td>
+      <td>${c.icon} ${esc(c.label)}</td>
+      <td>${esc(r.data.date||'—')}</td>
+      <td><strong>${esc(getTrTitle(r))}</strong></td>
+      <td style="text-align:right;font-weight:700;color:#0d4a2e">${esc(getTrValue(r))}</td>
+      <td style="font-size:10px;color:#607060">${detail}</td>
     </tr>`;
   }).join('');
 
   const expStats = {
     feed: list.filter(r => r.category === 'feed').length,
-    eggs: list.filter(r => r.category === 'eggs').reduce((s,r) => s + (parseFloat(r.data.total_eggs)||0), 0),
-    expense: list.filter(r => r.category === 'expense').reduce((s,r) => s + (parseFloat(r.data.amount)||0), 0),
+    eggs: list.filter(r => r.category === 'eggs').reduce((s,r) => s+(parseFloat(r.data.total_eggs)||0), 0),
+    expense: list.filter(r => r.category === 'expense').reduce((s,r) => s+(parseFloat(r.data.amount)||0), 0),
   };
 
-  const win = window.open('', '_blank');
-  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
-<title>SR FEEDS Farm Report – ${_dateStr()}</title>
-<style>
-  body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#111;margin:0;padding:20px;}
-  .header{background:#0a3520;color:#fff;padding:20px 24px;border-radius:8px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;}
-  .header h1{margin:0;font-size:20px;letter-spacing:1px;}
-  .header p{margin:4px 0 0;font-size:11px;opacity:.7;}
-  .gold{color:#c9a227;}
-  .stats{display:flex;gap:12px;margin-bottom:16px;}
-  .stat{flex:1;background:#e8f5ee;border:1px solid #d4e4d4;border-radius:8px;padding:10px;text-align:center;}
-  .stat-num{font-size:22px;font-weight:700;color:#0d4a2e;}
-  .stat-lbl{font-size:10px;color:#607060;text-transform:uppercase;letter-spacing:.5px;}
-  table{width:100%;border-collapse:collapse;font-size:11px;}
-  th{background:#0a3520;color:#c9a227;padding:8px 10px;text-align:left;font-size:10px;letter-spacing:.3px;text-transform:uppercase;}
-  td{padding:7px 10px;border-bottom:1px solid #f0f0f0;}
-  tr:nth-child(even) td{background:#f8faf8;}
-  .footer{margin-top:24px;text-align:center;font-size:10px;color:#aaa;border-top:1px solid #eee;padding-top:12px;}
-  @media print{body{padding:10px;}button{display:none!important;}}
-</style></head><body>
-<div class="header">
-  <div><h1>SR FEEDS <span class="gold">Farm Report</span></h1>
-  <p>Farmer: ${ud.name||'Farmer'} • ${ud.farmerType||''} • Generated: ${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</p>
-  <p>${ud.village||ud.locationName||''} ${dateRange}</p></div>
-  <div style="text-align:right"><div style="font-size:28px">📋</div><div style="font-size:10px;opacity:.6">Total: ${list.length} records</div></div>
+  // Remove any previous PDF preview
+  document.querySelectorAll('.__pdf-overlay').forEach(el => el.remove());
+
+  const overlay = document.createElement('div');
+  overlay.className = '__pdf-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#fff;overflow-y:auto;-webkit-overflow-scrolling:touch;';
+  overlay.innerHTML = `
+<div id="__pdf-content" style="font-family:\'Segoe UI\',Arial,sans-serif;font-size:12px;color:#111;padding:16px;max-width:800px;margin:0 auto;">
+  <div style="background:#0a3520;color:#fff;padding:16px 20px;border-radius:8px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-start;">
+    <div>
+      <div style="font-size:18px;font-weight:800;letter-spacing:1px;">SR FEEDS <span style="color:#c9a227;">Farm Report</span></div>
+      <div style="font-size:11px;opacity:.7;margin-top:4px;">Farmer: ${ud.name||'Farmer'} • ${ud.farmerType||''}</div>
+      <div style="font-size:11px;opacity:.7;">${ud.village||ud.locationName||''} ${dateRange}</div>
+      <div style="font-size:10px;opacity:.5;margin-top:2px;">Generated: ${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</div>
+    </div>
+    <div style="text-align:right;font-size:10px;opacity:.6;">Total: ${list.length} records</div>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:80px;background:#e8f5ee;border:1px solid #d4e4d4;border-radius:8px;padding:8px;text-align:center;">
+      <div style="font-size:20px;font-weight:700;color:#0d4a2e;">${list.length}</div>
+      <div style="font-size:9px;color:#607060;text-transform:uppercase;">Records</div>
+    </div>
+    <div style="flex:1;min-width:80px;background:#e8f5ee;border:1px solid #d4e4d4;border-radius:8px;padding:8px;text-align:center;">
+      <div style="font-size:20px;font-weight:700;color:#0d4a2e;">${expStats.feed}</div>
+      <div style="font-size:9px;color:#607060;text-transform:uppercase;">Feed Logs</div>
+    </div>
+    <div style="flex:1;min-width:80px;background:#e8f5ee;border:1px solid #d4e4d4;border-radius:8px;padding:8px;text-align:center;">
+      <div style="font-size:20px;font-weight:700;color:#0d4a2e;">${Math.round(expStats.eggs)}</div>
+      <div style="font-size:9px;color:#607060;text-transform:uppercase;">Eggs</div>
+    </div>
+    <div style="flex:1;min-width:80px;background:#e8f5ee;border:1px solid #d4e4d4;border-radius:8px;padding:8px;text-align:center;">
+      <div style="font-size:20px;font-weight:700;color:#0d4a2e;">₹${Math.round(expStats.expense).toLocaleString('en-IN')}</div>
+      <div style="font-size:9px;color:#607060;text-transform:uppercase;">Expenses</div>
+    </div>
+  </div>
+  <div style="overflow-x:auto;">
+  <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:500px;">
+    <thead><tr>
+      <th style="background:#0a3520;color:#c9a227;padding:8px;text-align:left;font-size:10px;text-transform:uppercase;">Category</th>
+      <th style="background:#0a3520;color:#c9a227;padding:8px;text-align:left;font-size:10px;text-transform:uppercase;">Date</th>
+      <th style="background:#0a3520;color:#c9a227;padding:8px;text-align:left;font-size:10px;text-transform:uppercase;">Title</th>
+      <th style="background:#0a3520;color:#c9a227;padding:8px;text-align:right;font-size:10px;text-transform:uppercase;">Value</th>
+      <th style="background:#0a3520;color:#c9a227;padding:8px;text-align:left;font-size:10px;text-transform:uppercase;">Details</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  </div>
+  <div style="margin-top:20px;text-align:center;font-size:10px;color:#aaa;border-top:1px solid #eee;padding-top:10px;">
+    SR FEEDS Unified Edition v4.4 &nbsp;•&nbsp; Science • Nutrition • Growth
+  </div>
 </div>
-<div class="stats">
-  <div class="stat"><div class="stat-num">${list.length}</div><div class="stat-lbl">Records</div></div>
-  <div class="stat"><div class="stat-num">${expStats.feed}</div><div class="stat-lbl">Feed Logs</div></div>
-  <div class="stat"><div class="stat-num">${Math.round(expStats.eggs)}</div><div class="stat-lbl">Eggs</div></div>
-  <div class="stat"><div class="stat-num">₹${Math.round(expStats.expense).toLocaleString('en-IN')}</div><div class="stat-lbl">Expenses</div></div>
-</div>
-<button onclick="window.print()" style="margin-bottom:16px;padding:10px 20px;background:#0d4a2e;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🖨️ Print / Save as PDF</button>
-<table>
-  <thead><tr><th>Category</th><th>Date</th><th>Title</th><th>Value</th><th>Details</th></tr></thead>
-  <tbody>${rows}</tbody>
-</table>
-<div class="footer">SR FEEDS Unified Edition v4.0 &nbsp;•&nbsp; Science • Nutrition • Growth &nbsp;•&nbsp; Report generated ${new Date().toLocaleString('en-IN')}</div>
-</body></html>`);
-  win.document.close();
-  win.focus();
-  setTimeout(() => win.print(), 500);
-  showToast(L.toast_pdf || 'PDF report opened ✓');
+<div class="__pdf-no-print" style="position:sticky;bottom:0;background:#fff;border-top:1px solid #eee;padding:12px 16px;display:flex;gap:10px;z-index:1;">
+  <button onclick="window.print()"
+    style="flex:1;padding:13px;background:#0a3520;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;">
+    🖨️ Print / Save PDF
+  </button>
+  <button onclick="document.querySelector('.__pdf-overlay').remove()"
+    style="flex:0 0 auto;padding:13px 18px;background:#f0f0f0;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;color:#333;">
+    ✕ Close
+  </button>
+</div>`;
+
+  // Add print-specific style
+  const ps = document.createElement('style');
+  ps.className = '__pdf-print-style';
+  ps.textContent = `@media print { .__pdf-no-print { display:none!important; } .__pdf-overlay { position:absolute!important; } }`;
+  document.head.appendChild(ps);
+
+  document.body.appendChild(overlay);
+  showToast(L.toast_pdf || 'Report ready — tap Print to save PDF ✓');
 }
 
 // Fixed JSON backup export
@@ -3653,6 +3721,545 @@ window.addEventListener('load', () => {
 });
 
 console.log('✅ SR FEEDS Fix Patch v4.2 loaded — Setup NEVER freezes, timeout-safe geo, WebView-safe notifications, hardcoded location removed.');
+
+</script>
+
+<script>
+// ============================================================
+// SR FEEDS v4.4 — FULL CONTENT I18N ENGINE
+// All 5 languages: English, Kannada, Hindi, Telugu, Tamil
+// Covers: Diseases, Vaccines, Calc stages, Tips, Wizard,
+//         Tracker labels, Modal titles
+// ============================================================
+const CONTENT_I18N = {
+
+// ── ENGLISH ─────────────────────────────────────────────────
+en: {
+  tips: [
+    'Broiler chicks need water before feed in the first hour. Dehydration in hour 1 causes poor growth for the entire flock.',
+    'Layer hens need 16+ hours of light daily for peak egg production. Use artificial lighting in winter months.',
+    'Never mix fresh and stored feed. Mold in old feed is the #1 cause of mysterious flock health problems.',
+    'A 1% improvement in FCR across 1000 broilers saves ₹2,000–3,000 per batch. Feed quality is profitability.',
+    'Cattle need 10% of body weight in dry matter daily. Underfeeding reduces milk yield by up to 20%.',
+    'Goat kids that receive colostrum in the first 6 hours have 40% lower mortality rates.',
+    'Heat stress above 35°C reduces broiler weight gain by 15–20%. Ensure proper ventilation and cooling.',
+    'Pre-layer feed with 1.8–2% calcium builds bone reserves for strong eggshells from day one of laying.',
+    'Keep drinkers clean and refill with cool water every 4 hours during summer for better feed intake.',
+    'Record your feed consumption daily. A sudden drop in intake is always the first sign of disease.',
+  ],
+  disCats: ['All','Poultry','Cattle','Goat'],
+  disCatLabels: {All:'All',Poultry:'Poultry',Cattle:'Cattle',Goat:'Goat'},
+  vacTabs: ['🐓 Broiler','🥚 Layer','🐄 Cattle','🐐 Goat'],
+  vacNote: '✅ Tap the circle to mark a vaccination as <strong>completed</strong>. Tap 🔔 to set a reminder.',
+  vacReminderBtn: '🔔 Set Reminder',
+  calcLabels: {
+    title:'🧮 Feed Calculator',
+    animalType:'Animal Type', feedingStage:'Feeding Stage',
+    numAnimals:'No. of Animals', feedPrice:'Feed Price (₹/kg)',
+    bodyWeight:'Avg Body Weight (kg) — optional',
+    calcBtn:'Calculate Feed Requirement', dailyFeed:'Daily Feed Required',
+    recentCalcs:'Recent Calculations',
+    animalOpts:['🐓 Broiler Chicken','🥚 Layer Hen','🐄 Cattle / Cow','🐐 Goat'],
+  },
+  profitLabels: {
+    title:'📈 Profit Estimator',
+    farmType:'Farm Type', numAnimals:'No. of Animals', prodDays:'Production Days',
+    mortality:'Expected Mortality %', medicine:'Medicine & Labour (₹)',
+    calcBtn:'Estimate Profit & Break-Even', netProfit:'Estimated Net Profit',
+    breakeven:'Break-even price', margin:'Margin', roi:'ROI',
+    recentEst:'Recent Estimates',
+    farmOpts:['🐓 Broiler (Meat)','🥚 Layer (Eggs)','🐄 Dairy Cattle','🐐 Goat (Meat)'],
+  },
+  trackerLabels: {
+    addBtn:'+ Add Record', searchPh:'Search records...',
+    cats:['All','Feed','Health','Sales','Expenses','Mortality','Weight','Eggs','Milk','Notes'],
+    noRecords:'No records yet. Tap + to add your first entry.',
+  },
+  modalTitles: {
+    disease:'🩺 Disease Guide', vaccine:'💉 Vaccination Planner',
+    catalog:'📦 SR FEEDS Product Catalog', calc:'🧮 Feed Calculator',
+    profit:'📈 Profit Estimator', wizard:'✨ Smart Feed Wizard',
+    dealer:'📍 Dealer Locator', export:'📤 Export Farm Data',
+    notif:'🔔 Notification Center', search:'🔍 Global Search',
+  },
+  wizSteps: [
+    {title:'What animal do you raise?',sub:'Select your livestock type.',key:'species',opts:[{ic:'🐓',lbl:'Broiler',val:'broiler'},{ic:'🥚',lbl:'Layer Hen',val:'layer'},{ic:'🐄',lbl:'Cattle / Cow',val:'cattle'},{ic:'🐐',lbl:'Goat',val:'goat'}]},
+    {title:'What age/stage are they?',sub:'Select the current life stage.',key:'age',opts:[{ic:'🐣',lbl:'Young (0–3 wks)',val:'young'},{ic:'🐦',lbl:'Growing (3–8 wks)',val:'growing'},{ic:'🐔',lbl:'Adult / Mature',val:'adult'},{ic:'🏆',lbl:'Market Ready',val:'market'}]},
+    {title:'What is your main goal?',sub:'What outcome matters most right now?',key:'goal',opts:[{ic:'📈',lbl:'Max Growth / FCR',val:'growth'},{ic:'🥚',lbl:'More Eggs',val:'egg'},{ic:'🥛',lbl:'Milk Yield',val:'milk'},{ic:'💰',lbl:'Best Profit',val:'profit'}]},
+    {title:'What is your feed budget?',sub:'Approximate cost per kg.',key:'budget',opts:[{ic:'💵',lbl:'Economy (<₹25/kg)',val:'economy'},{ic:'💰',lbl:'Standard (₹25–35)',val:'standard'},{ic:'💎',lbl:'Premium (₹35+)',val:'premium'},{ic:'🤔',lbl:'Not sure',val:'any'}]},
+  ],
+  diseases: [
+    {name:'Newcastle Disease (ND)',sp:'Poultry',cat:'Poultry',symptoms:'Twisting/drooping neck, gasping, green watery diarrhea, sudden high mortality, nervous signs',cause:'Paramyxovirus – highly contagious',prev:'Day 7 eye drop, Day 21 booster, Day 42 injection. Strict biosecurity.',resp:'Isolate all affected birds immediately. Contact veterinarian urgently. No effective treatment — prevention is critical.',sev:'critical'},
+    {name:'Ranikhet Disease',sp:'Poultry',cat:'Poultry',symptoms:'Respiratory distress, nervous tremors, greenish diarrhea, sudden egg production drop',cause:'Newcastle virus variant (NDV)',prev:'Regular ND vaccination program, biosecurity, quarantine new birds',resp:'No specific treatment. Supportive vitamins, electrolytes. Report to authorities if severe.',sev:'critical'},
+    {name:"Marek's Disease",sp:'Poultry',cat:'Poultry',symptoms:'Progressive leg/wing paralysis, grey iris, wasting, tumors, sudden death',cause:'Herpesvirus',prev:'Day-1 hatchery vaccination ONLY. Cannot vaccinate after infection.',resp:'Cull affected birds. Improve biosecurity. No treatment available.',sev:'high'},
+    {name:'Coccidiosis',sp:'Poultry',cat:'Poultry',symptoms:'Bloody/mucoid droppings, ruffled feathers, huddling, poor growth, high mortality in young birds',cause:'Eimeria species (protozoan parasite)',prev:'Coccidiostat in starter feed, dry litter, avoid overcrowding',resp:'Amprolium or Toltrazuril via water 3–5 days. Consult vet for dosage.',sev:'medium'},
+    {name:'Gumboro (IBD)',sp:'Poultry',cat:'Poultry',symptoms:'Ruffled feathers, prostration, watery diarrhea, dehydration, pecking at own vent',cause:'Birnavirus (attacks bursa of Fabricius)',prev:'Vaccination Day 14 and Day 28.',resp:'Supportive: electrolytes, vitamins. Increase biosecurity. Consult vet.',sev:'high'},
+    {name:'Chronic Respiratory Disease (CRD)',sp:'Poultry',cat:'Poultry',symptoms:'Nasal discharge, sneezing, facial swelling, respiratory rales, poor growth',cause:'Mycoplasma gallisepticum',prev:'MG-free breeding stock, biosecurity, antibiotic prevention in feed',resp:'Tylosin or Enrofloxacin via water under vet supervision.',sev:'medium'},
+    {name:'Fowl Pox',sp:'Poultry',cat:'Poultry',symptoms:'Wart-like scabs on comb/wattles; white patches in mouth (wet pox)',cause:'Avipoxvirus – spread by mosquitoes',prev:'Wing web vaccination at week 6–8. Mosquito control.',resp:'No specific treatment. Isolate affected birds. Vitamins A & E.',sev:'medium'},
+    {name:'Foot & Mouth Disease (FMD)',sp:'Cattle / Goat',cat:'Cattle',symptoms:'Blisters on tongue, gums, feet, teats. Excessive drooling, lameness, fever, milk drop',cause:'FMD Aphthovirus – highly contagious',prev:'Bi-annual FMD vaccination. Strict farm entry controls.',resp:'Isolate immediately. Disinfect entire farm. Notify authorities.',sev:'critical'},
+    {name:'Mastitis',sp:'Cattle',cat:'Cattle',symptoms:'Swollen, hot, painful udder. Reduced milk with clots, pus or blood. Fever, loss of appetite',cause:'Bacteria: Staphylococcus, Streptococcus, E. coli',prev:'Teat dipping post-milking, clean bedding, proper milking hygiene',resp:'Intramammary antibiotic infusion under vet guidance.',sev:'high'},
+    {name:'Bovine Bloat',sp:'Cattle / Goat',cat:'Cattle',symptoms:'Distended left abdomen, discomfort, kicking belly, difficulty breathing, sudden death',cause:'Gas trapped in rumen from wet legumes or sudden diet change',prev:'Avoid wet legume pasture, gradual diet transition, anti-foaming agents',resp:'Stomach tube for free gas. Oil/Poloxalene for frothy bloat. Emergency vet if critical.',sev:'high'},
+    {name:'Milk Fever (Hypocalcaemia)',sp:'Cattle',cat:'Cattle',symptoms:'Muscle tremors, staggering, inability to stand, cold extremities, loss of consciousness post-calving',cause:'Sudden drop in blood calcium at calving',prev:'Pre-calving calcium-controlled diet. Vitamin D supplementation.',resp:'IV calcium borogluconate injection by vet immediately. Life-threatening — act fast.',sev:'critical'},
+    {name:'PPR – Goat Plague',sp:'Goat / Sheep',cat:'Goat',symptoms:'High fever (41°C+), nasal/eye discharge, mouth ulcers, pneumonia, severe diarrhea, high mortality',cause:'Morbillivirus',prev:'Annual PPR vaccination. Quarantine new animals 3 weeks.',resp:'Isolate immediately. Antibiotics for secondary infections. Report to authorities.',sev:'critical'},
+    {name:'Enterotoxaemia (Goat)',sp:'Goat',cat:'Goat',symptoms:'Sudden death, convulsions, diarrhea, bloating in well-fed animals, sweet-smelling breath',cause:'Clostridium perfringens toxin',prev:'Vaccination every 6 months. Avoid sudden high-energy feed changes.',resp:'Antitoxin injection if caught early. Vet treatment urgently required.',sev:'critical'},
+    {name:'Goat Worm Infestation',sp:'Goat',cat:'Goat',symptoms:'Weight loss, bottle jaw, pale gums, rough coat, diarrhea, poor growth',cause:'Haemonchus contortus and other GI nematodes',prev:'Regular deworming rotation, avoid overgrazing, pasture management',resp:'Benzimidazole or levamisole under vet guidance. Rotate drug classes.',sev:'medium'},
+    {name:'Brucellosis',sp:'Cattle / Goat',cat:'Cattle',symptoms:'Abortion in late pregnancy, retained placenta, infertility, orchitis in males',cause:'Brucella abortus / B. melitensis',prev:'Vaccination of female calves 4–8 months. Biosecurity.',resp:'No treatment — cull infected animals. Report mandatory to authorities.',sev:'critical'},
+  ],
+  vaccines: {
+    broiler:[
+      {day:'Day 1',v:"Marek's Disease Vaccine",route:'Subcutaneous injection at hatchery'},
+      {day:'Day 7',v:'Newcastle Disease (ND) + Infectious Bronchitis (IB)',route:'Eye drop or drinking water'},
+      {day:'Day 14',v:'Gumboro / IBD Vaccine',route:'Drinking water'},
+      {day:'Day 21',v:'Newcastle Disease Booster (ND-Lasota)',route:'Drinking water / eye drop'},
+      {day:'Day 28',v:'Gumboro Booster (high-risk areas)',route:'Drinking water'},
+    ],
+    layer:[
+      {day:'Day 1',v:"Marek's Disease",route:'Subcutaneous injection'},
+      {day:'Day 7',v:'ND + IB (Lasota strain)',route:'Eye drop'},
+      {day:'Day 14',v:'IBD / Gumboro',route:'Drinking water'},
+      {day:'Day 21',v:'ND Booster (Lasota)',route:'Eye drop / drinking water'},
+      {day:'Week 6 (Day 42)',v:'Fowl Pox',route:'Wing web prick'},
+      {day:'Week 8',v:'Avian Encephalomyelitis (AE)',route:'Drinking water'},
+      {day:'Week 10',v:'ND + IB + EDS killed vaccine',route:'Intramuscular injection'},
+      {day:'Week 16',v:'Pre-layer ND+IB+EDS booster',route:'Intramuscular injection'},
+    ],
+    cattle:[
+      {day:'Every 6 months from 3 months',v:'FMD – Foot & Mouth Disease',route:'Subcutaneous injection'},
+      {day:'Annual from 3 months',v:'HS – Haemorrhagic Septicaemia',route:'Subcutaneous injection'},
+      {day:'Annual from 6 months',v:'BQ – Blackquarter',route:'Subcutaneous injection'},
+      {day:'Once at 4–8 months (females only)',v:'Brucellosis (Strain 19)',route:'Subcutaneous injection'},
+      {day:'Annual (tick-prone areas)',v:'Theileriosis (Tick Fever)',route:'Subcutaneous injection'},
+    ],
+    goat:[
+      {day:'Every 6 months',v:'PPR – Peste des Petits Ruminants',route:'Subcutaneous injection'},
+      {day:'Every 6 months',v:'FMD – Foot & Mouth Disease',route:'Subcutaneous injection'},
+      {day:'Every 6 months',v:'Enterotoxaemia (Clostridium CD-T)',route:'Subcutaneous injection'},
+      {day:'Annual',v:'Goat Pox',route:'Intramuscular injection'},
+      {day:'Annual endemic areas (females only)',v:'Brucellosis',route:'Subcutaneous injection'},
+    ],
+  },
+  calcStages: {
+    broiler:[
+      {label:'Pre-Starter – Day 1–10',rate:20,unit:'g',cp:'21–23%',energy:'2850–2950 kcal/kg',lysine:'1.2%',meth:'0.55%'},
+      {label:'Starter Crumble – Day 11–21',rate:50,unit:'g',cp:'20–21%',energy:'2950–3000 kcal/kg',lysine:'1.1%',meth:'0.50%'},
+      {label:'Grower Pellets – Day 22–30',rate:100,unit:'g',cp:'18–19%',energy:'3000–3100 kcal/kg',lysine:'1.0%',meth:'0.45%'},
+      {label:'Finisher Pellets – Day 31+',rate:150,unit:'g',cp:'17–18%',energy:'3100–3200 kcal/kg',lysine:'0.9%',meth:'0.40%'},
+    ],
+    layer:[
+      {label:'Chick Pre-Starter – 0–4 Weeks',rate:25,unit:'g',cp:'20–21%',energy:'2850–2900 kcal/kg',lysine:'1.05%',meth:'0.45%'},
+      {label:'Chick Starter – 5–8 Weeks',rate:45,unit:'g',cp:'19–20%',energy:'2800–2900 kcal/kg',lysine:'1.00%',meth:'0.42%'},
+      {label:'Grower Phase 1 – 9–12 Weeks',rate:65,unit:'g',cp:'17–18%',energy:'2700–2800 kcal/kg',lysine:'0.85%',meth:'0.38%'},
+      {label:'Grower Phase 2 – 13–16 Weeks',rate:80,unit:'g',cp:'16–17%',energy:'2650–2750 kcal/kg',lysine:'0.80%',meth:'0.35%'},
+      {label:'Pre-Layer – 17–18 Weeks',rate:90,unit:'g',cp:'16–17%',energy:'2700–2800 kcal/kg',lysine:'0.85%',meth:'0.38%'},
+      {label:'Layer Phase 1 Peak – 19–32 Weeks',rate:115,unit:'g',cp:'17–18%',energy:'2700–2800 kcal/kg',lysine:'0.82%',meth:'0.36%'},
+      {label:'Layer Phase 2 Mid – 33–50 Weeks',rate:115,unit:'g',cp:'16–17%',energy:'2700–2800 kcal/kg',lysine:'0.78%',meth:'0.34%'},
+      {label:'Layer Phase 3 Late – 51+ Weeks',rate:110,unit:'g',cp:'15–16%',energy:'2650–2750 kcal/kg',lysine:'0.72%',meth:'0.32%'},
+    ],
+    cattle:[
+      {label:'Calf Starter – 0–3 Months',rate:1.5,unit:'kg',cp:'18–20%',energy:'High energy',lysine:'—',meth:'—'},
+      {label:'Grower – 3–12 Months',rate:4,unit:'kg',cp:'16–18%',energy:'2700–2900 kcal/kg',lysine:'—',meth:'—'},
+      {label:'Heifer – 12–24 Months',rate:5.5,unit:'kg',cp:'14–16%',energy:'2500–2700 kcal/kg',lysine:'—',meth:'—'},
+      {label:'Lactating Cow',rate:8,unit:'kg',cp:'16–18%',energy:'2700–2900 + bypass fat',lysine:'—',meth:'—'},
+      {label:'Dry Cow – Pre-Calving',rate:5,unit:'kg',cp:'Controlled',energy:'Moderate energy',lysine:'—',meth:'—'},
+      {label:'Fattening – Beef Cattle',rate:7,unit:'kg',cp:'14–16%',energy:'High energy ration',lysine:'—',meth:'—'},
+    ],
+    goat:[
+      {label:'Kid Starter – 0–3 Months',rate:0.3,unit:'kg',cp:'18–20%',energy:'High protein',lysine:'—',meth:'—'},
+      {label:'Grower – 3–9 Months',rate:0.6,unit:'kg',cp:'16–18%',energy:'2700–2900 kcal/kg',lysine:'—',meth:'—'},
+      {label:'Breeding / Adult – 9+ Months',rate:0.8,unit:'kg',cp:'14–16%',energy:'2600–2750 kcal/kg',lysine:'—',meth:'—'},
+      {label:'Pregnant & Lactating',rate:1.0,unit:'kg',cp:'16–18%',energy:'High energy + Ca/P',lysine:'—',meth:'—'},
+      {label:'Fattening / Meat Goat',rate:1.2,unit:'kg',cp:'Energy-rich',energy:'High grain ration',lysine:'—',meth:'—'},
+    ],
+  },
+}, // end en
+
+// ── KANNADA ─────────────────────────────────────────────────
+kn: {
+  tips: [
+    'ಬ್ರಾಯ್ಲರ್ ಮರಿಗಳಿಗೆ ಮೊದಲ ಗಂಟೆಯಲ್ಲಿ ಆಹಾರಕ್ಕಿಂತ ಮೊದಲು ನೀರು ಕೊಡಬೇಕು.',
+    'ಲೇಯರ್ ಕೋಳಿಗಳಿಗೆ ಗರಿಷ್ಠ ಮೊಟ್ಟೆ ಉತ್ಪಾದನೆಗೆ ದಿನಕ್ಕೆ 16+ ಗಂಟೆ ಬೆಳಕು ಬೇಕು.',
+    'ತಾಜಾ ಮತ್ತು ಸಂಗ್ರಹಿಸಿದ ಆಹಾರವನ್ನು ಎಂದಿಗೂ ಬೆರೆಸಬೇಡಿ.',
+    'FCR ನಲ್ಲಿ 1% ಸುಧಾರಣೆ 1000 ಬ್ರಾಯ್ಲರ್‌ಗಳಲ್ಲಿ ₹2,000–3,000 ಉಳಿಸುತ್ತದೆ.',
+    'ದನಗಳಿಗೆ ದಿನಕ್ಕೆ ದೇಹತೂಕದ 10% ಒಣ ವಸ್ತು ಬೇಕು.',
+    'ಮೊದಲ 6 ಗಂಟೆಗಳಲ್ಲಿ ಕೊಲೊಸ್ಟ್ರಮ್ ಪಡೆದ ಮೇಕೆ ಮರಿಗಳಲ್ಲಿ ಮರಣ ಪ್ರಮಾಣ 40% ಕಡಿಮೆ.',
+    '35°C ಮೇಲಿನ ಶಾಖ ಒತ್ತಡ ಬ್ರಾಯ್ಲರ್ ತೂಕ ಏರಿಕೆಯನ್ನು 15–20% ಕಡಿಮೆ ಮಾಡುತ್ತದೆ.',
+    'ಪ್ರಿ-ಲೇಯರ್ ಆಹಾರದಲ್ಲಿ 1.8–2% ಕ್ಯಾಲ್ಸಿಯಂ ಮೊಟ್ಟೆ ಚಿಪ್ಪಿಗಾಗಿ ಮೂಳೆ ಮೀಸಲು ನಿರ್ಮಿಸುತ್ತದೆ.',
+    'ಬೇಸಿಗೆಯಲ್ಲಿ ಪ್ರತಿ 4 ಗಂಟೆಗೆ ತಂಪು ನೀರು ತುಂಬಿ.',
+    'ಪ್ರತಿದಿನ ಆಹಾರ ಸೇವನೆ ದಾಖಲಿಸಿ. ಹಠಾತ್ ಇಳಿಕೆ ಕಾಯಿಲೆಯ ಮೊದಲ ಸಂಕೇತ.',
+  ],
+  disCats: ['ಎಲ್ಲ','ಕೋಳಿ','ದನ','ಮೇಕೆ'],
+  disCatLabels: {All:'ಎಲ್ಲ',Poultry:'ಕೋಳಿ',Cattle:'ದನ',Goat:'ಮೇಕೆ'},
+  vacTabs: ['🐓 ಬ್ರಾಯ್ಲರ್','🥚 ಲೇಯರ್','🐄 ದನ','🐐 ಮೇಕೆ'],
+  vacNote: '✅ ಪೂರ್ಣ ಗುರುತಿಸಲು ವೃತ್ತ ಒತ್ತಿ. 🔔 ಜ್ಞಾಪನೆ ಹೊಂದಿಸಲು ಒತ್ತಿ.',
+  vacReminderBtn: '🔔 ಜ್ಞಾಪನೆ ಹೊಂದಿಸಿ',
+  calcLabels: {title:'🧮 ಆಹಾರ ಲೆಕ್ಕಾಚಾರ',animalType:'ಪ್ರಾಣಿ ವಿಧ',feedingStage:'ಆಹಾರ ಹಂತ',numAnimals:'ಪ್ರಾಣಿಗಳ ಸಂಖ್ಯೆ',feedPrice:'ಆಹಾರ ಬೆಲೆ (₹/kg)',bodyWeight:'ಸರಾಸರಿ ದೇಹ ತೂಕ (kg)',calcBtn:'ಆಹಾರ ಅಗತ್ಯ ಲೆಕ್ಕಿಸಿ',dailyFeed:'ದೈನಂದಿನ ಆಹಾರ ಅಗತ್ಯ',recentCalcs:'ಇತ್ತೀಚಿನ ಲೆಕ್ಕಾಚಾರ',animalOpts:['🐓 ಬ್ರಾಯ್ಲರ್ ಕೋಳಿ','🥚 ಲೇಯರ್ ಕೋಳಿ','🐄 ದನ / ಹಸು','🐐 ಮೇಕೆ']},
+  profitLabels: {title:'📈 ಲಾಭ ಅಂದಾಜು',farmType:'ಫಾರ್ಮ್ ವಿಧ',numAnimals:'ಪ್ರಾಣಿಗಳ ಸಂಖ್ಯೆ',prodDays:'ಉತ್ಪಾದನಾ ದಿನಗಳು',mortality:'ನಿರೀಕ್ಷಿತ ಮರಣ %',medicine:'ಔಷಧ ಮತ್ತು ಕಾರ್ಮಿಕ (₹)',calcBtn:'ಲಾಭ ಮತ್ತು ಬ್ರೇಕ್-ಈವನ್ ಅಂದಾಜಿಸಿ',netProfit:'ಅಂದಾಜು ನಿವ್ವಳ ಲಾಭ',breakeven:'ಬ್ರೇಕ್-ಈವನ್ ಬೆಲೆ',margin:'ಅಂಚು',roi:'ROI',recentEst:'ಇತ್ತೀಚಿನ ಅಂದಾಜು',farmOpts:['🐓 ಬ್ರಾಯ್ಲರ್ (ಮಾಂಸ)','🥚 ಲೇಯರ್ (ಮೊಟ್ಟೆ)','🐄 ಹೈನು ದನ','🐐 ಮೇಕೆ (ಮಾಂಸ)']},
+  trackerLabels: {addBtn:'+ ದಾಖಲೆ ಸೇರಿಸಿ',searchPh:'ದಾಖಲೆ ಹುಡುಕಿ...',cats:['ಎಲ್ಲ','ಆಹಾರ','ಆರೋಗ್ಯ','ಮಾರಾಟ','ವೆಚ್ಚ','ಮರಣ','ತೂಕ','ಮೊಟ್ಟೆ','ಹಾಲು','ಟಿಪ್ಪಣಿ'],noRecords:'ಇನ್ನೂ ದಾಖಲೆ ಇಲ್ಲ. + ಒತ್ತಿ ಸೇರಿಸಿ.'},
+  modalTitles: {disease:'🩺 ರೋಗ ಮಾರ್ಗದರ್ಶಿ',vaccine:'💉 ಲಸಿಕೆ ಯೋಜಕ',catalog:'📦 SR FEEDS ಉತ್ಪನ್ನ ಪಟ್ಟಿ',calc:'🧮 ಆಹಾರ ಲೆಕ್ಕಾಚಾರ',profit:'📈 ಲಾಭ ಅಂದಾಜು',wizard:'✨ ಸ್ಮಾರ್ಟ್ ಫೀಡ್ ವಿಜಾರ್ಡ್',dealer:'📍 ಡೀಲರ್ ಪತ್ತೆ',export:'📤 ಫಾರ್ಮ್ ಡೇಟಾ ರಫ್ತು',notif:'🔔 ಅಧಿಸೂಚನೆ ಕೇಂದ್ರ',search:'🔍 ಜಾಗತಿಕ ಹುಡುಕಾಟ'},
+  wizSteps: [
+    {title:'ನೀವು ಯಾವ ಪ್ರಾಣಿ ಸಾಕುತ್ತೀರಿ?',sub:'ನಿಮ್ಮ ಜಾನುವಾರು ವಿಧ ಆರಿಸಿ.',key:'species',opts:[{ic:'🐓',lbl:'ಬ್ರಾಯ್ಲರ್',val:'broiler'},{ic:'🥚',lbl:'ಲೇಯರ್',val:'layer'},{ic:'🐄',lbl:'ದನ / ಹಸು',val:'cattle'},{ic:'🐐',lbl:'ಮೇಕೆ',val:'goat'}]},
+    {title:'ಅವುಗಳ ವಯಸ್ಸು/ಹಂತ?',sub:'ಪ್ರಸ್ತುತ ಜೀವನ ಹಂತ ಆರಿಸಿ.',key:'age',opts:[{ic:'🐣',lbl:'ಚಿಕ್ಕದು (0–3 ವಾರ)',val:'young'},{ic:'🐦',lbl:'ಬೆಳೆಯುತ್ತಿರುವ (3–8 ವಾರ)',val:'growing'},{ic:'🐔',lbl:'ವಯಸ್ಕ',val:'adult'},{ic:'🏆',lbl:'ಮಾರುಕಟ್ಟೆ ಸಿದ್ಧ',val:'market'}]},
+    {title:'ನಿಮ್ಮ ಮುಖ್ಯ ಗುರಿ?',sub:'ಈಗ ಯಾವ ಫಲಿತಾಂಶ ಮುಖ್ಯ?',key:'goal',opts:[{ic:'📈',lbl:'ಗರಿಷ್ಠ ಬೆಳವಣಿಗೆ',val:'growth'},{ic:'🥚',lbl:'ಹೆಚ್ಚು ಮೊಟ್ಟೆ',val:'egg'},{ic:'🥛',lbl:'ಹಾಲಿನ ಇಳುವರಿ',val:'milk'},{ic:'💰',lbl:'ಉತ್ತಮ ಲಾಭ',val:'profit'}]},
+    {title:'ನಿಮ್ಮ ಆಹಾರ ಬಜೆಟ್?',sub:'ಪ್ರತಿ kg ಗೆ ಖರ್ಚು ಅಂದಾಜು.',key:'budget',opts:[{ic:'💵',lbl:'ಮಿತ (<₹25/kg)',val:'economy'},{ic:'💰',lbl:'ಸಾಮಾನ್ಯ (₹25–35)',val:'standard'},{ic:'💎',lbl:'ಪ್ರೀಮಿಯಂ (₹35+)',val:'premium'},{ic:'🤔',lbl:'ಖಚಿತವಿಲ್ಲ',val:'any'}]},
+  ],
+  diseases: [
+    {name:'ನ್ಯೂಕ್ಯಾಸಲ್ ರೋಗ (ND)',sp:'ಕೋಳಿ',cat:'Poultry',symptoms:'ಕತ್ತು ತಿರುಗಿಸುವುದು, ಉಸಿರಾಟ ತೊಂದರೆ, ಹಸಿರು ನೀರಿನ ಭೇದಿ, ಹಠಾತ್ ಹೆಚ್ಚಿನ ಮರಣ',cause:'ಪ್ಯಾರಾಮಿಕ್ಸೋವೈರಸ್',prev:'7ನೇ ದಿನ ಕಣ್ಣಿನ ಡ್ರಾಪ್, 21ನೇ ದಿನ ಬೂಸ್ಟರ್, 42ನೇ ದಿನ ಚುಚ್ಚುಮದ್ದು.',resp:'ಪ್ರಭಾವಿತ ಎಲ್ಲ ಪಕ್ಷಿಗಳನ್ನು ತಕ್ಷಣ ಬೇರ್ಪಡಿಸಿ. ಪಶು ವೈದ್ಯರನ್ನು ತುರ್ತಾಗಿ ಸಂಪರ್ಕಿಸಿ.',sev:'critical'},
+    {name:'ರಾಣಿಕೇತ್ ರೋಗ',sp:'ಕೋಳಿ',cat:'Poultry',symptoms:'ಉಸಿರಾಟ ತೊಂದರೆ, ನರ ಕಂಪನ, ಹಸಿರು ಭೇದಿ, ಮೊಟ್ಟೆ ಇಳಿಕೆ',cause:'ND ವೈರಸ್ ರೂಪಾಂತರ',prev:'ನಿಯಮಿತ ND ಲಸಿಕೆ, ಜೈವಿಕ ಸುರಕ್ಷತೆ',resp:'ನಿರ್ದಿಷ್ಟ ಚಿಕಿತ್ಸೆ ಇಲ್ಲ. ವಿಟಮಿನ್ ಮತ್ತು ಎಲೆಕ್ಟ್ರೋಲೈಟ್ ಸಹಾಯ.',sev:'critical'},
+    {name:'ಮಾರೆಕ್ ರೋಗ',sp:'ಕೋಳಿ',cat:'Poultry',symptoms:'ಕಾಲು/ರೆಕ್ಕೆ ಪಾರ್ಶ್ವವಾಯು, ಗಡ್ಡೆ, ಹಠಾತ್ ಸಾವು',cause:'ಹರ್ಪಿಸ್‌ವೈರಸ್',prev:'1ನೇ ದಿನ ಹ್ಯಾಚರಿ ಲಸಿಕೆ ಮಾತ್ರ.',resp:'ಪ್ರಭಾವಿತ ಪಕ್ಷಿಗಳನ್ನು ವಧಿಸಿ. ಚಿಕಿತ್ಸೆ ಇಲ್ಲ.',sev:'high'},
+    {name:'ಕಾಕ್ಸಿಡಿಯೋಸಿಸ್',sp:'ಕೋಳಿ',cat:'Poultry',symptoms:'ರಕ್ತ/ಲೋಳೆ ಮಿಶ್ರಿತ ಹಿಕ್ಕೆ, ಒಟ್ಟಾಗಿ ಗುಂಪಾಗುವುದು, ಬೆಳವಣಿಗೆ ಕಡಿಮೆ',cause:'ಈಮೇರಿಯಾ ಜಾತಿ',prev:'ಸ್ಟಾರ್ಟರ್ ಆಹಾರದಲ್ಲಿ ಕಾಕ್ಸಿಡಿಯೋಸ್ಟ್ಯಾಟ್',resp:'ಆಂಪ್ರೋಲಿಯಂ ಅಥವಾ ಟೋಲ್ಟ್ರಾಝ್ಯೂರಿಲ್ ನೀರಿನ ಮೂಲಕ 3–5 ದಿನ.',sev:'medium'},
+    {name:'ಗಂಬೊರೊ (IBD)',sp:'ಕೋಳಿ',cat:'Poultry',symptoms:'ಗರಿ ನಿಲ್ಲಿಸುವುದು, ನೀರಿನ ಭೇದಿ, ನಿರ್ಜಲೀಕರಣ',cause:'ಬರ್ನಾವೈರಸ್',prev:'14ನೇ ಮತ್ತು 28ನೇ ದಿನ ಲಸಿಕೆ.',resp:'ಎಲೆಕ್ಟ್ರೋಲೈಟ್, ವಿಟಮಿನ್. ವೈದ್ಯರನ್ನು ಕೇಳಿ.',sev:'high'},
+    {name:'ದೀರ್ಘಕಾಲಿಕ ಉಸಿರಾಟ ರೋಗ (CRD)',sp:'ಕೋಳಿ',cat:'Poultry',symptoms:'ಮೂಗಿನಿಂದ ದ್ರವ, ಸೀನು, ಮುಖ ಊತ',cause:'ಮೈಕೋಪ್ಲಾಸ್ಮಾ ಗ್ಯಾಲಿಸೆಪ್ಟಿಕಂ',prev:'MG ಮುಕ್ತ ತಳಿ, ಜೈವಿಕ ಸುರಕ್ಷತೆ',resp:'ವೈದ್ಯರ ಮೇಲ್ವಿಚಾರಣೆಯಲ್ಲಿ ಟೈಲೋಸಿನ್.',sev:'medium'},
+    {name:'ಕೋಳಿ ಮಸೂರ (Fowl Pox)',sp:'ಕೋಳಿ',cat:'Poultry',symptoms:'ಕೊಂಬು, ಕಿವಿ ಮೇಲೆ ಮೊಡವೆ ಗಡ್ಡೆ; ಬಾಯಿಯಲ್ಲಿ ಬಿಳಿ ಕಲೆ',cause:'ಅವಿಪಾಕ್ಸ್‌ವೈರಸ್',prev:'6–8 ವಾರ ರೆಕ್ಕೆ ಜಾಲ ಲಸಿಕೆ.',resp:'ನಿರ್ದಿಷ್ಟ ಚಿಕಿತ್ಸೆ ಇಲ್ಲ. ಪ್ರಭಾವಿತ ಪಕ್ಷಿ ಬೇರ್ಪಡಿಸಿ.',sev:'medium'},
+    {name:'ಕಾಲು ಬಾಯಿ ರೋಗ (FMD)',sp:'ದನ / ಮೇಕೆ',cat:'Cattle',symptoms:'ನಾಲಿಗೆ, ವಸಡು, ಕಾಲು, ಕೆಚ್ಚಲಿನ ಮೇಲೆ ಗುಳ್ಳೆ. ಹೆಚ್ಚಿನ ಜೊಲ್ಲು, ಕುಂಟುವಿಕೆ',cause:'FMD ಅಫ್ಥೋವೈರಸ್',prev:'ವರ್ಷಕ್ಕೆ ಎರಡು ಬಾರಿ FMD ಲಸಿಕೆ.',resp:'ತಕ್ಷಣ ಬೇರ್ಪಡಿಸಿ. ಇಡೀ ಫಾರ್ಮ್ ಸೋಂಕುನಾಶ ಮಾಡಿ. ಅಧಿಕಾರಿಗಳಿಗೆ ತಿಳಿಸಿ.',sev:'critical'},
+    {name:'ಮಾಸ್ಟೈಟಿಸ್ (ಕೆಚ್ಚಲು ರೋಗ)',sp:'ದನ',cat:'Cattle',symptoms:'ಊದಿಕೊಂಡ, ಬಿಸಿ, ನೋವಿನ ಕೆಚ್ಚಲು. ರಕ್ತ/ಕೀವು ಮಿಶ್ರಿತ ಹಾಲು',cause:'ಸ್ಟ್ಯಾಫಿಲೋಕಾಕಸ್, ಸ್ಟ್ರೆಪ್ಟೋಕಾಕಸ್',prev:'ಹಾಲು ಕರೆದ ನಂತರ ಕೆಚ್ಚಲ ತೊಳೆಯುವಿಕೆ',resp:'ವೈದ್ಯರ ಮಾರ್ಗದರ್ಶನದಲ್ಲಿ ಅಂತರ ಸ್ತನ ಪ್ರತಿಜೀವಕ.',sev:'high'},
+    {name:'ಹೊಟ್ಟೆ ಉಬ್ಬರ (Bloat)',sp:'ದನ / ಮೇಕೆ',cat:'Cattle',symptoms:'ಎಡ ಹೊಟ್ಟೆ ಊದಿಕೊಳ್ಳುವಿಕೆ, ಉಸಿರಾಟ ತೊಂದರೆ',cause:'ರೂಮೆನ್‌ನಲ್ಲಿ ಅನಿಲ',prev:'ತೇವ ಮೇವು ತಡೆ, ಕ್ರಮೇಣ ಆಹಾರ ಬದಲಾವಣೆ',resp:'ಮುಕ್ತ ಅನಿಲಕ್ಕೆ ಹೊಟ್ಟೆ ಕೊಳವೆ. ತೀವ್ರ ಸಂದರ್ಭದಲ್ಲಿ ತುರ್ತು ವೈದ್ಯ.',sev:'high'},
+    {name:'ಹಾಲು ಜ್ವರ (Hypocalcaemia)',sp:'ದನ',cat:'Cattle',symptoms:'ಸ್ನಾಯು ಕಂಪನ, ತೂರಾಡುವಿಕೆ, ನಿಲ್ಲಲಾಗದಿರುವಿಕೆ',cause:'ಹೆರಿಗೆ ಸಮಯದಲ್ಲಿ ಕ್ಯಾಲ್ಸಿಯಂ ಇಳಿಕೆ',prev:'ಹೆರಿಗೆಗೆ ಮೊದಲು ಕ್ಯಾಲ್ಸಿಯಂ ನಿಯಂತ್ರಿತ ಆಹಾರ.',resp:'ವೈದ್ಯರಿಂದ ತಕ್ಷಣ IV ಕ್ಯಾಲ್ಸಿಯಂ ಚುಚ್ಚುಮದ್ದು. ಜೀವಘಾತಕ.',sev:'critical'},
+    {name:'PPR – ಮೇಕೆ ಪ್ಲೇಗ್',sp:'ಮೇಕೆ / ಕುರಿ',cat:'Goat',symptoms:'ಹೆಚ್ಚಿನ ಜ್ವರ (41°C+), ಬಾಯಿ ಹುಣ್ಣು, ತೀವ್ರ ಭೇದಿ',cause:'ಮೊರ್ಬಿಲಿವೈರಸ್',prev:'ವಾರ್ಷಿಕ PPR ಲಸಿಕೆ.',resp:'ತಕ್ಷಣ ಬೇರ್ಪಡಿಸಿ. ಅಧಿಕಾರಿಗಳಿಗೆ ತಿಳಿಸಿ.',sev:'critical'},
+    {name:'ಎಂಟರೊಟಾಕ್ಸೆಮಿಯಾ (ಮೇಕೆ)',sp:'ಮೇಕೆ',cat:'Goat',symptoms:'ಹಠಾತ್ ಸಾವು, ಸೆಳೆತ, ಭೇದಿ, ಊದಿಕೊಳ್ಳುವಿಕೆ',cause:'ಕ್ಲೋಸ್ಟ್ರಿಡಿಯಂ ಪರ್ಫ್ರಿಂಜೆನ್ಸ್ ವಿಷ',prev:'6 ತಿಂಗಳಿಗೊಮ್ಮೆ ಲಸಿಕೆ.',resp:'ಬೇಗ ಹಿಡಿದರೆ ಆ್ಯಂಟಿಟಾಕ್ಸಿನ್ ಚುಚ್ಚುಮದ್ದು.',sev:'critical'},
+    {name:'ಮೇಕೆ ಹುಳ ಸೋಂಕು',sp:'ಮೇಕೆ',cat:'Goat',symptoms:'ತೂಕ ಕಳೆದುಕೊಳ್ಳುವಿಕೆ, ಬಿಳಿ ವಸಡು, ಭೇದಿ',cause:'ಹೆಮೊಂಕಸ್ ಕಾಂಟಾರ್ಟಸ್',prev:'ನಿಯಮಿತ ಹುಳ ನಿವಾರಣೆ',resp:'ವೈದ್ಯರ ಮಾರ್ಗದರ್ಶನದಲ್ಲಿ ಬೆಂಝಿಮಿಡಝೋಲ್.',sev:'medium'},
+    {name:'ಬ್ರೂಸೆಲ್ಲೋಸಿಸ್',sp:'ದನ / ಮೇಕೆ',cat:'Cattle',symptoms:'ಕಡೆಯ ಗರ್ಭದಲ್ಲಿ ಗರ್ಭಪಾತ, ಬಂಜೆತನ',cause:'ಬ್ರೂಸೆಲ್ಲಾ ಅಬಾರ್ಟಸ್',prev:'4–8 ತಿಂಗಳ ಕರು ಹೆಣ್ಣಿಗೆ ಲಸಿಕೆ.',resp:'ಚಿಕಿತ್ಸೆ ಇಲ್ಲ — ಸೋಂಕಿತ ಪ್ರಾಣಿ ವಧೆ. ಕಡ್ಡಾಯ ವರದಿ.',sev:'critical'},
+  ],
+  vaccines: {
+    broiler:[{day:'1ನೇ ದಿನ',v:'ಮಾರೆಕ್ ರೋಗ ಲಸಿಕೆ',route:'ಹ್ಯಾಚರಿಯಲ್ಲಿ ಚರ್ಮದ ಕೆಳಗೆ'},{day:'7ನೇ ದಿನ',v:'ND + IB',route:'ಕಣ್ಣಿನ ಡ್ರಾಪ್ ಅಥವಾ ನೀರಿನ ಮೂಲಕ'},{day:'14ನೇ ದಿನ',v:'ಗಂಬೊರೊ / IBD',route:'ನೀರಿನ ಮೂಲಕ'},{day:'21ನೇ ದಿನ',v:'ND ಬೂಸ್ಟರ್ (ND-Lasota)',route:'ನೀರಿನ ಮೂಲಕ / ಕಣ್ಣಿನ ಡ್ರಾಪ್'},{day:'28ನೇ ದಿನ',v:'ಗಂಬೊರೊ ಬೂಸ್ಟರ್',route:'ನೀರಿನ ಮೂಲಕ'}],
+    layer:[{day:'1ನೇ ದಿನ',v:'ಮಾರೆಕ್ ರೋಗ',route:'ಚರ್ಮದ ಕೆಳಗೆ'},{day:'7ನೇ ದಿನ',v:'ND + IB (Lasota)',route:'ಕಣ್ಣಿನ ಡ್ರಾಪ್'},{day:'14ನೇ ದಿನ',v:'IBD / ಗಂಬೊರೊ',route:'ನೀರಿನ ಮೂಲಕ'},{day:'21ನೇ ದಿನ',v:'ND ಬೂಸ್ಟರ್',route:'ಕಣ್ಣಿನ ಡ್ರಾಪ್ / ನೀರು'},{day:'6ನೇ ವಾರ',v:'ಕೋಳಿ ಮಸೂರ',route:'ರೆಕ್ಕೆ ಜಾಲ ಚುಚ್ಚು'},{day:'8ನೇ ವಾರ',v:'ಏವಿಯನ್ ಎನ್ಸೆಫಲೋಮೈಲಿಟಿಸ್',route:'ನೀರಿನ ಮೂಲಕ'},{day:'10ನೇ ವಾರ',v:'ND + IB + EDS',route:'ಸ್ನಾಯು ಚುಚ್ಚುಮದ್ದು'},{day:'16ನೇ ವಾರ',v:'ಪ್ರಿ-ಲೇಯರ್ ND+IB+EDS ಬೂಸ್ಟರ್',route:'ಸ್ನಾಯು ಚುಚ್ಚುಮದ್ದು'}],
+    cattle:[{day:'3 ತಿಂಗಳಿಂದ ಪ್ರತಿ 6 ತಿಂಗಳಿಗೆ',v:'FMD',route:'ಚರ್ಮದ ಕೆಳಗೆ'},{day:'3 ತಿಂಗಳಿಂದ ವಾರ್ಷಿಕ',v:'HS',route:'ಚರ್ಮದ ಕೆಳಗೆ'},{day:'6 ತಿಂಗಳಿಂದ ವಾರ್ಷಿಕ',v:'BQ',route:'ಚರ್ಮದ ಕೆಳಗೆ'},{day:'4–8 ತಿಂಗಳಿಗೊಮ್ಮೆ (ಹೆಣ್ಣು ಮಾತ್ರ)',v:'ಬ್ರೂಸೆಲ್ಲೋಸಿಸ್',route:'ಚರ್ಮದ ಕೆಳಗೆ'},{day:'ವಾರ್ಷಿಕ (ಉಣ್ಣಿ ಪ್ರದೇಶ)',v:'ಟೀಲೇರಿಯೋಸಿಸ್',route:'ಚರ್ಮದ ಕೆಳಗೆ'}],
+    goat:[{day:'ಪ್ರತಿ 6 ತಿಂಗಳಿಗೆ',v:'PPR',route:'ಚರ್ಮದ ಕೆಳಗೆ'},{day:'ಪ್ರತಿ 6 ತಿಂಗಳಿಗೆ',v:'FMD',route:'ಚರ್ಮದ ಕೆಳಗೆ'},{day:'ಪ್ರತಿ 6 ತಿಂಗಳಿಗೆ',v:'ಎಂಟರೊಟಾಕ್ಸೆಮಿಯಾ',route:'ಚರ್ಮದ ಕೆಳಗೆ'},{day:'ವಾರ್ಷಿಕ',v:'ಮೇಕೆ ಸಿಡುಬು',route:'ಸ್ನಾಯು ಚುಚ್ಚುಮದ್ದು'},{day:'ವಾರ್ಷಿಕ (ಹೆಣ್ಣು ಮಾತ್ರ)',v:'ಬ್ರೂಸೆಲ್ಲೋಸಿಸ್',route:'ಚರ್ಮದ ಕೆಳಗೆ'}],
+  },
+  calcStages: {
+    broiler:[{label:'ಪ್ರಿ-ಸ್ಟಾರ್ಟರ್ – 1–10ನೇ ದಿನ',rate:20,unit:'g',cp:'21–23%',energy:'2850–2950 kcal/kg',lysine:'1.2%',meth:'0.55%'},{label:'ಸ್ಟಾರ್ಟರ್ ಕ್ರಂಬಲ್ – 11–21ನೇ ದಿನ',rate:50,unit:'g',cp:'20–21%',energy:'2950–3000 kcal/kg',lysine:'1.1%',meth:'0.50%'},{label:'ಗ್ರೋವರ್ ಪೆಲೆಟ್ – 22–30ನೇ ದಿನ',rate:100,unit:'g',cp:'18–19%',energy:'3000–3100 kcal/kg',lysine:'1.0%',meth:'0.45%'},{label:'ಫಿನಿಶರ್ ಪೆಲೆಟ್ – 31ನೇ ದಿನ+',rate:150,unit:'g',cp:'17–18%',energy:'3100–3200 kcal/kg',lysine:'0.9%',meth:'0.40%'}],
+    layer:[{label:'ಚಿಕ್ ಪ್ರಿ-ಸ್ಟಾರ್ಟರ್ – 0–4 ವಾರ',rate:25,unit:'g',cp:'20–21%',energy:'2850–2900 kcal/kg',lysine:'1.05%',meth:'0.45%'},{label:'ಚಿಕ್ ಸ್ಟಾರ್ಟರ್ – 5–8 ವಾರ',rate:45,unit:'g',cp:'19–20%',energy:'2800–2900 kcal/kg',lysine:'1.00%',meth:'0.42%'},{label:'ಗ್ರೋವರ್ ಹಂತ 1 – 9–12 ವಾರ',rate:65,unit:'g',cp:'17–18%',energy:'2700–2800 kcal/kg',lysine:'0.85%',meth:'0.38%'},{label:'ಗ್ರೋವರ್ ಹಂತ 2 – 13–16 ವಾರ',rate:80,unit:'g',cp:'16–17%',energy:'2650–2750 kcal/kg',lysine:'0.80%',meth:'0.35%'},{label:'ಪ್ರಿ-ಲೇಯರ್ – 17–18 ವಾರ',rate:90,unit:'g',cp:'16–17%',energy:'2700–2800 kcal/kg',lysine:'0.85%',meth:'0.38%'},{label:'ಲೇಯರ್ ಹಂತ 1 – 19–32 ವಾರ',rate:115,unit:'g',cp:'17–18%',energy:'2700–2800 kcal/kg',lysine:'0.82%',meth:'0.36%'},{label:'ಲೇಯರ್ ಹಂತ 2 – 33–50 ವಾರ',rate:115,unit:'g',cp:'16–17%',energy:'2700–2800 kcal/kg',lysine:'0.78%',meth:'0.34%'},{label:'ಲೇಯರ್ ಹಂತ 3 – 51+ ವಾರ',rate:110,unit:'g',cp:'15–16%',energy:'2650–2750 kcal/kg',lysine:'0.72%',meth:'0.32%'}],
+    cattle:[{label:'ಕರು ಸ್ಟಾರ್ಟರ್ – 0–3 ತಿಂಗಳು',rate:1.5,unit:'kg',cp:'18–20%',energy:'ಹೆಚ್ಚಿನ ಶಕ್ತಿ',lysine:'—',meth:'—'},{label:'ಗ್ರೋವರ್ – 3–12 ತಿಂಗಳು',rate:4,unit:'kg',cp:'16–18%',energy:'2700–2900 kcal/kg',lysine:'—',meth:'—'},{label:'ಹೆಫರ್ – 12–24 ತಿಂಗಳು',rate:5.5,unit:'kg',cp:'14–16%',energy:'2500–2700 kcal/kg',lysine:'—',meth:'—'},{label:'ಹಾಲು ಕರೆಯುವ ಹಸು',rate:8,unit:'kg',cp:'16–18%',energy:'2700–2900 + ಬೈಪಾಸ್ ಕೊಬ್ಬು',lysine:'—',meth:'—'},{label:'ಒಣ ಹಸು – ಹೆರಿಗೆ ಮೊದಲು',rate:5,unit:'kg',cp:'ನಿಯಂತ್ರಿತ',energy:'ಮಧ್ಯಮ ಶಕ್ತಿ',lysine:'—',meth:'—'},{label:'ಮಾಂಸ ದನ ಬೊಜ್ಜು',rate:7,unit:'kg',cp:'14–16%',energy:'ಹೆಚ್ಚಿನ ಶಕ್ತಿ',lysine:'—',meth:'—'}],
+    goat:[{label:'ಮರಿ ಸ್ಟಾರ್ಟರ್ – 0–3 ತಿಂಗಳು',rate:0.3,unit:'kg',cp:'18–20%',energy:'ಹೆಚ್ಚಿನ ಪ್ರೋಟೀನ್',lysine:'—',meth:'—'},{label:'ಗ್ರೋವರ್ – 3–9 ತಿಂಗಳು',rate:0.6,unit:'kg',cp:'16–18%',energy:'2700–2900 kcal/kg',lysine:'—',meth:'—'},{label:'ಸಂತಾನೋತ್ಪತ್ತಿ / ವಯಸ್ಕ – 9+ ತಿಂಗಳು',rate:0.8,unit:'kg',cp:'14–16%',energy:'2600–2750 kcal/kg',lysine:'—',meth:'—'},{label:'ಗರ್ಭಿಣಿ ಮತ್ತು ಹಾಲು ಕರೆಯುವ',rate:1.0,unit:'kg',cp:'16–18%',energy:'ಹೆಚ್ಚಿನ ಶಕ್ತಿ + Ca/P',lysine:'—',meth:'—'},{label:'ಮಾಂಸ ಮೇಕೆ ಬೊಜ್ಜು',rate:1.2,unit:'kg',cp:'ಶಕ್ತಿ ಭರಿತ',energy:'ಹೆಚ್ಚಿನ ಧಾನ್ಯ',lysine:'—',meth:'—'}],
+  },
+}, // end kn
+
+// ── HINDI ────────────────────────────────────────────────────
+hi: {
+  tips: ['ब्रॉयलर चूजों को पहले घंटे में पानी पहले दें।','लेयर मुर्गियों को 16+ घंटे रोशनी चाहिए।','ताज़े और पुराने चारे को कभी न मिलाएं।','FCR में 1% सुधार 1000 ब्रॉयलर में ₹2,000–3,000 बचाता है।','मवेशियों को शरीर वजन का 10% सूखा पदार्थ चाहिए।','पहले 6 घंटों में कोलोस्ट्रम से बकरी बच्चों में 40% कम मृत्यु।','35°C ऊपर गर्मी ब्रॉयलर वजन 15–20% कम करती है।','प्री-लेयर में 1.8–2% कैल्शियम मजबूत अंडे के छिलके।','गर्मियों में हर 4 घंटे ठंडा पानी भरें।','रोज चारा सेवन दर्ज करें। अचानक कमी बीमारी का पहला संकेत।'],
+  disCats: ['सभी','मुर्गी','मवेशी','बकरी'],
+  disCatLabels: {All:'सभी',Poultry:'मुर्गी',Cattle:'मवेशी',Goat:'बकरी'},
+  vacTabs: ['🐓 ब्रॉयलर','🥚 लेयर','🐄 मवेशी','🐐 बकरी'],
+  vacNote: '✅ पूरा होने पर वृत्त दबाएं। 🔔 रिमाइंडर के लिए दबाएं।',
+  vacReminderBtn: '🔔 रिमाइंडर सेट करें',
+  calcLabels: {title:'🧮 चारा कैलकुलेटर',animalType:'पशु प्रकार',feedingStage:'चारा चरण',numAnimals:'पशुओं की संख्या',feedPrice:'चारा मूल्य (₹/kg)',bodyWeight:'औसत शरीर वजन (kg)',calcBtn:'चारा आवश्यकता गणना करें',dailyFeed:'दैनिक चारा आवश्यकता',recentCalcs:'हाल की गणनाएं',animalOpts:['🐓 ब्रॉयलर मुर्गी','🥚 लेयर मुर्गी','🐄 मवेशी / गाय','🐐 बकरी']},
+  profitLabels: {title:'📈 लाभ अनुमान',farmType:'फार्म प्रकार',numAnimals:'पशुओं की संख्या',prodDays:'उत्पादन दिन',mortality:'अपेक्षित मृत्यु %',medicine:'दवाई और मजदूरी (₹)',calcBtn:'लाभ और ब्रेक-ईवन अनुमान',netProfit:'अनुमानित शुद्ध लाभ',breakeven:'ब्रेक-ईवन मूल्य',margin:'मार्जिन',roi:'ROI',recentEst:'हाल के अनुमान',farmOpts:['🐓 ब्रॉयलर (मांस)','🥚 लेयर (अंडे)','🐄 डेयरी मवेशी','🐐 बकरी (मांस)']},
+  trackerLabels: {addBtn:'+ रिकॉर्ड जोड़ें',searchPh:'रिकॉर्ड खोजें...',cats:['सभी','चारा','स्वास्थ्य','बिक्री','खर्च','मृत्यु','वजन','अंडे','दूध','नोट्स'],noRecords:'अभी कोई रिकॉर्ड नहीं। + दबाकर जोड़ें।'},
+  modalTitles: {disease:'🩺 रोग मार्गदर्शिका',vaccine:'💉 टीकाकरण योजनाकार',catalog:'📦 SR FEEDS उत्पाद सूची',calc:'🧮 चारा कैलकुलेटर',profit:'📈 लाभ अनुमान',wizard:'✨ स्मार्ट फीड विज़ार्ड',dealer:'📍 डीलर लोकेटर',export:'📤 फार्म डेटा निर्यात',notif:'🔔 अधिसूचना केंद्र',search:'🔍 वैश्विक खोज'},
+  wizSteps: [
+    {title:'आप कौन सा पशु पालते हैं?',sub:'अपना पशु प्रकार चुनें।',key:'species',opts:[{ic:'🐓',lbl:'ब्रॉयलर',val:'broiler'},{ic:'🥚',lbl:'लेयर मुर्गी',val:'layer'},{ic:'🐄',lbl:'मवेशी / गाय',val:'cattle'},{ic:'🐐',lbl:'बकरी',val:'goat'}]},
+    {title:'उनकी उम्र/चरण?',sub:'वर्तमान जीवन चरण चुनें।',key:'age',opts:[{ic:'🐣',lbl:'छोटे (0–3 सप्ताह)',val:'young'},{ic:'🐦',lbl:'बढ़ते (3–8 सप्ताह)',val:'growing'},{ic:'🐔',lbl:'वयस्क',val:'adult'},{ic:'🏆',lbl:'बाज़ार तैयार',val:'market'}]},
+    {title:'आपका मुख्य लक्ष्य?',sub:'अभी कौन सा परिणाम महत्वपूर्ण?',key:'goal',opts:[{ic:'📈',lbl:'अधिकतम वृद्धि',val:'growth'},{ic:'🥚',lbl:'अधिक अंडे',val:'egg'},{ic:'🥛',lbl:'दूध उत्पादन',val:'milk'},{ic:'💰',lbl:'सर्वोत्तम लाभ',val:'profit'}]},
+    {title:'आपका चारा बजट?',sub:'प्रति kg अनुमानित खर्च।',key:'budget',opts:[{ic:'💵',lbl:'किफायती (<₹25/kg)',val:'economy'},{ic:'💰',lbl:'सामान्य (₹25–35)',val:'standard'},{ic:'💎',lbl:'प्रीमियम (₹35+)',val:'premium'},{ic:'🤔',lbl:'निश्चित नहीं',val:'any'}]},
+  ],
+  diseases: [
+    {name:'न्यूकैसल रोग (ND)',sp:'मुर्गी',cat:'Poultry',symptoms:'गर्दन मुड़ना, हांफना, हरे पानी वाली दस्त, अचानक अधिक मृत्यु',cause:'पैरामिक्सोवायरस',prev:'7वें दिन आंखों में ड्रॉप, 21वें दिन बूस्टर, 42वें दिन इंजेक्शन।',resp:'सभी प्रभावित पक्षियों को तुरंत अलग करें। पशु चिकित्सक से तुरंत संपर्क करें।',sev:'critical'},
+    {name:'रानीखेत रोग',sp:'मुर्गी',cat:'Poultry',symptoms:'श्वसन कष्ट, तंत्रिका कंपन, हरी दस्त, अंडा उत्पादन गिरावट',cause:'NDV वायरस',prev:'नियमित ND टीकाकरण, जैव-सुरक्षा',resp:'कोई विशिष्ट उपचार नहीं। विटामिन, इलेक्ट्रोलाइट्स सहायक।',sev:'critical'},
+    {name:'मारेक रोग',sp:'मुर्गी',cat:'Poultry',symptoms:'पैर/पंख पक्षाघात, ट्यूमर, अचानक मृत्यु',cause:'हर्पीसवायरस',prev:'केवल पहले दिन हैचरी में टीकाकरण।',resp:'प्रभावित पक्षियों का वध। कोई उपचार नहीं।',sev:'high'},
+    {name:'कोक्सीडियोसिस',sp:'मुर्गी',cat:'Poultry',symptoms:'खूनी दस्त, पंख फुलाना, कम वृद्धि',cause:'एमेरिया जाति (परजीवी)',prev:'स्टार्टर चारे में कॉक्सिडियोस्टैट, सूखा बिछावन',resp:'पानी से एम्प्रोलियम 3–5 दिन। पशु चिकित्सक से खुराक पूछें।',sev:'medium'},
+    {name:'गुम्बोरो (IBD)',sp:'मुर्गी',cat:'Poultry',symptoms:'पंख फुलाना, शिथिलता, पानी दस्त, निर्जलीकरण',cause:'बिर्नावायरस',prev:'14वें और 28वें दिन टीकाकरण।',resp:'इलेक्ट्रोलाइट्स, विटामिन। पशु चिकित्सक से पूछें।',sev:'high'},
+    {name:'CRD – दीर्घकालिक श्वसन',sp:'मुर्गी',cat:'Poultry',symptoms:'नाक से स्राव, छींक, श्वसन की आवाज़',cause:'माइकोप्लाज़्मा गैलिसेप्टिकम',prev:'MG-मुक्त नस्ल, जैव-सुरक्षा',resp:'पशु चिकित्सक अनुसार टाइलोसिन या एनरोफ्लॉक्सासिन।',sev:'medium'},
+    {name:'मुर्गी चेचक (Fowl Pox)',sp:'मुर्गी',cat:'Poultry',symptoms:'कंघी पर मस्से; मुंह में सफेद धब्बे',cause:'एविपॉक्सवायरस – मच्छरों से',prev:'6–8 सप्ताह पंख जाल टीकाकरण।',resp:'अलग करें। विटामिन A & E।',sev:'medium'},
+    {name:'खुरपका-मुंहपका (FMD)',sp:'मवेशी / बकरी',cat:'Cattle',symptoms:'जीभ, खुरों पर छाले। अत्यधिक लार, लंगड़ापन',cause:'FMD अफ्थोवायरस',prev:'हर 6 महीने FMD टीकाकरण।',resp:'तुरंत अलग, पूरा फार्म कीटाणुरहित, अधिकारियों को सूचित।',sev:'critical'},
+    {name:'थनैला (Mastitis)',sp:'मवेशी',cat:'Cattle',symptoms:'सूजा थन, मवाद/खून मिला दूध',cause:'स्टैफिलोकोकस, स्ट्रेप्टोकोकस',prev:'दूधारू थन स्वच्छता, साफ बिछावन',resp:'पशु चिकित्सक अनुसार थन एंटीबायोटिक।',sev:'high'},
+    {name:'पेट फूलना (Bloat)',sp:'मवेशी / बकरी',cat:'Cattle',symptoms:'बाईं ओर पेट फूलना, सांस कठिनाई',cause:'रूमेन में गैस',prev:'गीले चरागाह से बचें, धीरे आहार बदलें',resp:'पेट की नली। तुरंत पशु चिकित्सक।',sev:'high'},
+    {name:'दूध बुखार (Hypocalcaemia)',sp:'मवेशी',cat:'Cattle',symptoms:'कंपन, खड़े होने में असमर्थता, बेहोशी',cause:'ब्याने पर कैल्शियम कमी',prev:'ब्याने से पहले कैल्शियम नियंत्रित आहार।',resp:'तुरंत IV कैल्शियम इंजेक्शन। जानलेवा।',sev:'critical'},
+    {name:'PPR – बकरी प्लेग',sp:'बकरी / भेड़',cat:'Goat',symptoms:'तेज बुखार, मुंह के छाले, गंभीर दस्त',cause:'मोर्बिलीवायरस',prev:'वार्षिक PPR टीकाकरण।',resp:'तुरंत अलग। द्वितीयक संक्रमण के लिए एंटीबायोटिक।',sev:'critical'},
+    {name:'एंटरोटॉक्सीमिया (बकरी)',sp:'बकरी',cat:'Goat',symptoms:'अचानक मृत्यु, आक्षेप, सूजन',cause:'क्लोस्ट्रीडियम विष',prev:'हर 6 महीने टीकाकरण।',resp:'जल्दी पकड़ें तो एंटीटॉक्सिन।',sev:'critical'},
+    {name:'बकरी कृमि संक्रमण',sp:'बकरी',cat:'Goat',symptoms:'वजन घटना, पीले मसूड़े, दस्त',cause:'हेमोंकस कॉन्टॉर्टस',prev:'नियमित कृमिनाशक, चरागाह प्रबंधन',resp:'बेंजिमिडाजोल या लेवामिसोल।',sev:'medium'},
+    {name:'ब्रूसेलोसिस',sp:'मवेशी / बकरी',cat:'Cattle',symptoms:'देर से गर्भपात, बांझपन',cause:'ब्रूसेला एबोर्टस',prev:'4–8 माह मादा बछड़ों को टीका।',resp:'कोई उपचार नहीं — वध। अनिवार्य रिपोर्ट।',sev:'critical'},
+  ],
+  vaccines: {
+    broiler:[{day:'पहला दिन',v:'मारेक रोग टीका',route:'हैचरी में त्वचा के नीचे'},{day:'7वां दिन',v:'ND + IB',route:'आंखों में ड्रॉप या पानी'},{day:'14वां दिन',v:'गुम्बोरो / IBD',route:'पानी से'},{day:'21वां दिन',v:'ND बूस्टर',route:'पानी / आंखें'},{day:'28वां दिन',v:'गुम्बोरो बूस्टर',route:'पानी से'}],
+    layer:[{day:'पहला दिन',v:'मारेक रोग',route:'त्वचा के नीचे'},{day:'7वां दिन',v:'ND + IB (Lasota)',route:'आंखों में ड्रॉप'},{day:'14वां दिन',v:'IBD / गुम्बोरो',route:'पानी से'},{day:'21वां दिन',v:'ND बूस्टर',route:'आंखें / पानी'},{day:'6वां सप्ताह',v:'मुर्गी चेचक',route:'पंख जाल'},{day:'8वां सप्ताह',v:'AE टीका',route:'पानी से'},{day:'10वां सप्ताह',v:'ND+IB+EDS',route:'मांसपेशी'},{day:'16वां सप्ताह',v:'प्री-लेयर बूस्टर',route:'मांसपेशी'}],
+    cattle:[{day:'3 माह से हर 6 माह',v:'FMD',route:'त्वचा के नीचे'},{day:'3 माह से वार्षिक',v:'HS',route:'त्वचा के नीचे'},{day:'6 माह से वार्षिक',v:'BQ',route:'त्वचा के नीचे'},{day:'4–8 माह (मादा)',v:'ब्रूसेलोसिस',route:'त्वचा के नीचे'},{day:'वार्षिक',v:'टिक बुखार',route:'त्वचा के नीचे'}],
+    goat:[{day:'हर 6 माह',v:'PPR',route:'त्वचा के नीचे'},{day:'हर 6 माह',v:'FMD',route:'त्वचा के नीचे'},{day:'हर 6 माह',v:'एंटरोटॉक्सीमिया',route:'त्वचा के नीचे'},{day:'वार्षिक',v:'बकरी चेचक',route:'मांसपेशी'},{day:'वार्षिक (मादा)',v:'ब्रूसेलोसिस',route:'त्वचा के नीचे'}],
+  },
+  calcStages: {
+    broiler:[{label:'प्री-स्टार्टर – दिन 1–10',rate:20,unit:'g',cp:'21–23%',energy:'2850–2950 kcal/kg',lysine:'1.2%',meth:'0.55%'},{label:'स्टार्टर क्रंबल – दिन 11–21',rate:50,unit:'g',cp:'20–21%',energy:'2950–3000 kcal/kg',lysine:'1.1%',meth:'0.50%'},{label:'ग्रोवर पेलेट – दिन 22–30',rate:100,unit:'g',cp:'18–19%',energy:'3000–3100 kcal/kg',lysine:'1.0%',meth:'0.45%'},{label:'फिनिशर पेलेट – दिन 31+',rate:150,unit:'g',cp:'17–18%',energy:'3100–3200 kcal/kg',lysine:'0.9%',meth:'0.40%'}],
+    layer:[{label:'चिक प्री-स्टार्टर – 0–4 सप्ताह',rate:25,unit:'g',cp:'20–21%',energy:'2850–2900 kcal/kg',lysine:'1.05%',meth:'0.45%'},{label:'चिक स्टार्टर – 5–8 सप्ताह',rate:45,unit:'g',cp:'19–20%',energy:'2800–2900 kcal/kg',lysine:'1.00%',meth:'0.42%'},{label:'ग्रोवर 1 – 9–12 सप्ताह',rate:65,unit:'g',cp:'17–18%',energy:'2700–2800 kcal/kg',lysine:'0.85%',meth:'0.38%'},{label:'ग्रोवर 2 – 13–16 सप्ताह',rate:80,unit:'g',cp:'16–17%',energy:'2650–2750 kcal/kg',lysine:'0.80%',meth:'0.35%'},{label:'प्री-लेयर – 17–18 सप्ताह',rate:90,unit:'g',cp:'16–17%',energy:'2700–2800 kcal/kg',lysine:'0.85%',meth:'0.38%'},{label:'लेयर 1 पीक – 19–32 सप्ताह',rate:115,unit:'g',cp:'17–18%',energy:'2700–2800 kcal/kg',lysine:'0.82%',meth:'0.36%'},{label:'लेयर 2 मध्य – 33–50 सप्ताह',rate:115,unit:'g',cp:'16–17%',energy:'2700–2800 kcal/kg',lysine:'0.78%',meth:'0.34%'},{label:'लेयर 3 अंत – 51+ सप्ताह',rate:110,unit:'g',cp:'15–16%',energy:'2650–2750 kcal/kg',lysine:'0.72%',meth:'0.32%'}],
+    cattle:[{label:'बछड़ा स्टार्टर – 0–3 माह',rate:1.5,unit:'kg',cp:'18–20%',energy:'उच्च ऊर्जा',lysine:'—',meth:'—'},{label:'ग्रोवर – 3–12 माह',rate:4,unit:'kg',cp:'16–18%',energy:'2700–2900 kcal/kg',lysine:'—',meth:'—'},{label:'हेफर – 12–24 माह',rate:5.5,unit:'kg',cp:'14–16%',energy:'2500–2700 kcal/kg',lysine:'—',meth:'—'},{label:'दुधारू गाय',rate:8,unit:'kg',cp:'16–18%',energy:'2700–2900 + बायपास फैट',lysine:'—',meth:'—'},{label:'सूखी गाय – ब्याने से पहले',rate:5,unit:'kg',cp:'नियंत्रित',energy:'मध्यम ऊर्जा',lysine:'—',meth:'—'},{label:'मोटा करना – बीफ',rate:7,unit:'kg',cp:'14–16%',energy:'उच्च ऊर्जा',lysine:'—',meth:'—'}],
+    goat:[{label:'मेमना स्टार्टर – 0–3 माह',rate:0.3,unit:'kg',cp:'18–20%',energy:'उच्च प्रोटीन',lysine:'—',meth:'—'},{label:'ग्रोवर – 3–9 माह',rate:0.6,unit:'kg',cp:'16–18%',energy:'2700–2900 kcal/kg',lysine:'—',meth:'—'},{label:'प्रजनन / वयस्क – 9+ माह',rate:0.8,unit:'kg',cp:'14–16%',energy:'2600–2750 kcal/kg',lysine:'—',meth:'—'},{label:'गर्भवती और दुधारू',rate:1.0,unit:'kg',cp:'16–18%',energy:'उच्च ऊर्जा + Ca/P',lysine:'—',meth:'—'},{label:'मांस बकरी मोटा',rate:1.2,unit:'kg',cp:'ऊर्जा-युक्त',energy:'उच्च अनाज',lysine:'—',meth:'—'}],
+  },
+}, // end hi
+
+// ── TELUGU ───────────────────────────────────────────────────
+te: {
+  tips: ['బ్రాయిలర్ పిల్లలకు మొదటి గంటలో నీళ్ళు ముందు ఇవ్వాలి.','లేయర్ కోళ్ళకు 16+ గంటల వెలుతురు అవసరం.','తాజా మరియు నిల్వ ఆహారం కలపకూడదు.','FCR లో 1% మెరుగుదల ₹2,000–3,000 ఆదా చేస్తుంది.','పశువులకు శరీర బరువు 10% పొడి పదార్థం అవసరం.','కొలొస్ట్రమ్ మొదటి 6 గంటల్లో పొందిన మేక పిల్లలు 40% తక్కువ మరణాలు.','35°C పై వేడి బ్రాయిలర్ 15–20% తక్కువ బరువు.','ప్రి-లేయర్ లో 1.8–2% కాల్షియం అవసరం.','వేసవిలో 4 గంటలకు చల్లని నీరు.','రోజువారీ ఆహారం నమోదు చేయండి. అకస్మాత్తు తగ్గుదల వ్యాధి సంకేతం.'],
+  disCats: ['అన్నీ','కోళ్ళు','పశువులు','మేకలు'],
+  disCatLabels: {All:'అన్నీ',Poultry:'కోళ్ళు',Cattle:'పశువులు',Goat:'మేకలు'},
+  vacTabs: ['🐓 బ్రాయిలర్','🥚 లేయర్','🐄 పశువులు','🐐 మేకలు'],
+  vacNote: '✅ పూర్తయినదని గుర్తించడానికి వృత్తం నొక్కండి. 🔔 రిమైండర్ కోసం నొక్కండి.',
+  vacReminderBtn: '🔔 రిమైండర్ సెట్ చేయి',
+  calcLabels: {title:'🧮 దాణా కాలిక్యులేటర్',animalType:'జంతువు రకం',feedingStage:'దాణా దశ',numAnimals:'జంతువుల సంఖ్య',feedPrice:'దాణా ధర (₹/kg)',bodyWeight:'సగటు శరీర బరువు (kg)',calcBtn:'దాణా అవసరం లెక్కించండి',dailyFeed:'రోజువారీ దాణా అవసరం',recentCalcs:'ఇటీవలి లెక్కలు',animalOpts:['🐓 బ్రాయిలర్ కోడి','🥚 లేయర్ కోడి','🐄 పశువులు / ఆవు','🐐 మేక']},
+  profitLabels: {title:'📈 లాభం అంచనా',farmType:'ఫారం రకం',numAnimals:'జంతువుల సంఖ్య',prodDays:'ఉత్పత్తి రోజులు',mortality:'అంచనా మరణాల %',medicine:'మందులు మరియు కూలి (₹)',calcBtn:'లాభం మరియు బ్రేక్-ఈవన్ అంచనా',netProfit:'అంచనా నికర లాభం',breakeven:'బ్రేక్-ఈవన్ ధర',margin:'అంచు',roi:'ROI',recentEst:'ఇటీవలి అంచనాలు',farmOpts:['🐓 బ్రాయిలర్ (మాంసం)','🥚 లేయర్ (గుడ్లు)','🐄 డెయిరీ పశువులు','🐐 మేక (మాంసం)']},
+  trackerLabels: {addBtn:'+ రికార్డు జోడించు',searchPh:'రికార్డులు వెతకండి...',cats:['అన్నీ','దాణా','ఆరోగ్యం','అమ్మకాలు','ఖర్చులు','మరణాలు','బరువు','గుడ్లు','పాలు','నోట్స్'],noRecords:'ఇంకా రికార్డులు లేవు. + నొక్కి సేర్చండి.'},
+  modalTitles: {disease:'🩺 వ్యాధి మార్గదర్శి',vaccine:'💉 వ్యాక్సినేషన్ ప్లానర్',catalog:'📦 SR FEEDS ఉత్పత్తి జాబితా',calc:'🧮 దాణా కాలిక్యులేటర్',profit:'📈 లాభం అంచనా',wizard:'✨ స్మార్ట్ ఫీడ్ విజార్డ్',dealer:'📍 డీలర్ లొకేటర్',export:'📤 ఫారం డేటా ఎగుమతి',notif:'🔔 నోటిఫికేషన్ కేంద్రం',search:'🔍 గ్లోబల్ శోధన'},
+  wizSteps: [
+    {title:'మీరు ఏ జంతువు పెంచుతున్నారు?',sub:'మీ పశువుల రకం ఎంచుకోండి.',key:'species',opts:[{ic:'🐓',lbl:'బ్రాయిలర్',val:'broiler'},{ic:'🥚',lbl:'లేయర్',val:'layer'},{ic:'🐄',lbl:'పశువులు',val:'cattle'},{ic:'🐐',lbl:'మేక',val:'goat'}]},
+    {title:'వాటి వయసు/దశ?',sub:'వాటి ప్రస్తుత దశ ఎంచుకోండి.',key:'age',opts:[{ic:'🐣',lbl:'చిన్నవి (0–3 వారాలు)',val:'young'},{ic:'🐦',lbl:'పెరుగుతున్నవి (3–8 వారాలు)',val:'growing'},{ic:'🐔',lbl:'వయోజన',val:'adult'},{ic:'🏆',lbl:'మార్కెట్ సిద్ధం',val:'market'}]},
+    {title:'మీ ప్రధాన లక్ష్యం?',sub:'ఇప్పుడు ఏది ముఖ్యం?',key:'goal',opts:[{ic:'📈',lbl:'గరిష్ట పెరుగుదల',val:'growth'},{ic:'🥚',lbl:'ఎక్కువ గుడ్లు',val:'egg'},{ic:'🥛',lbl:'పాల దిగుబడి',val:'milk'},{ic:'💰',lbl:'ఉత్తమ లాభం',val:'profit'}]},
+    {title:'మీ దాణా బడ్జెట్?',sub:'kg కి ఖర్చు అంచనా.',key:'budget',opts:[{ic:'💵',lbl:'ఆర్థికం (<₹25)',val:'economy'},{ic:'💰',lbl:'సాధారణ (₹25–35)',val:'standard'},{ic:'💎',lbl:'ప్రీమియం (₹35+)',val:'premium'},{ic:'🤔',lbl:'తెలియదు',val:'any'}]},
+  ],
+  diseases: [
+    {name:'న్యూకాజిల్ వ్యాధి (ND)',sp:'కోడి',cat:'Poultry',symptoms:'మెడ తిరగడం, ఆయాసం, పచ్చని అతిసారం, అకస్మాత్తు మరణాలు',cause:'పారామిక్సోవైరస్',prev:'7వ రోజు కంటి చుక్కలు, 21వ రోజు బూస్టర్, 42వ రోజు ఇంజెక్షన్.',resp:'వెంటనే వేరు చేయండి. పశు వైద్యుడిని సంప్రదించండి.',sev:'critical'},
+    {name:'రాన్‌ఖేత్ వ్యాధి',sp:'కోడి',cat:'Poultry',symptoms:'శ్వాసకోశ సమస్యలు, పచ్చని అతిసారం, గుడ్ల తగ్గుదల',cause:'NDV వైరస్',prev:'నిర్వహించిన ND వ్యాక్సినేషన్',resp:'నిర్దిష్ట చికిత్స లేదు. విటమిన్లు ఇవ్వండి.',sev:'critical'},
+    {name:'మారెక్ వ్యాధి',sp:'కోడి',cat:'Poultry',symptoms:'కాలు/రెక్కల పక్షవాతం, కణితులు',cause:'హెర్పీస్‌వైరస్',prev:'1వ రోజు హాచరీ వ్యాక్సిన్ మాత్రమే.',resp:'ప్రభావిత పక్షులను వధించండి. చికిత్స లేదు.',sev:'high'},
+    {name:'కాక్సీడియోసిస్',sp:'కోడి',cat:'Poultry',symptoms:'రక్తంతో కూడిన రెట్టలు, తక్కువ పెరుగుదల',cause:'ఐమేరియా',prev:'స్టార్టర్ లో కాక్సీడియోస్టాట్',resp:'అంప్రోలియం 3–5 రోజులు.',sev:'medium'},
+    {name:'గుంబోరో (IBD)',sp:'కోడి',cat:'Poultry',symptoms:'నీటి అతిసారం, నిర్జలీకరణం',cause:'బిర్నావైరస్',prev:'14వ మరియు 28వ రోజు వ్యాక్సిన్.',resp:'ఎలక్ట్రోలైట్‌లు, విటమిన్లు.',sev:'high'},
+    {name:'CRD – దీర్ఘకాలిక శ్వాస',sp:'కోడి',cat:'Poultry',symptoms:'ముక్కు స్రావం, శ్వాసకోశ శబ్దాలు',cause:'మైకోప్లాస్మా',prev:'MG రహిత జాతి, జీవ భద్రత',resp:'వైద్యుని పర్యవేక్షణలో టైలోసిన్.',sev:'medium'},
+    {name:'కోడి పాక్స్',sp:'కోడి',cat:'Poultry',symptoms:'చెవి మీద పొలుసులు, నోటిలో తెల్లని మచ్చలు',cause:'అవిపాక్స్‌వైరస్ – దోమల ద్వారా',prev:'6–8 వారాల్లో రెక్క వెబ్ వ్యాక్సిన్.',resp:'నిర్దిష్ట చికిత్స లేదు. వేరు చేయండి.',sev:'medium'},
+    {name:'కాలు-నోరు వ్యాధి (FMD)',sp:'పశువులు / మేక',cat:'Cattle',symptoms:'నాలుక, కాళ్ళు, పొదుగు మీద బొబ్బలు',cause:'FMD అఫ్తోవైరస్',prev:'ప్రతి 6 నెలలకు FMD వ్యాక్సిన్.',resp:'వెంటనే వేరు చేయండి. ఫారం జీవాణు నాశనం. అధికారులకు నివేదించండి.',sev:'critical'},
+    {name:'పొదుగు వ్యాధి (Mastitis)',sp:'పశువులు',cat:'Cattle',symptoms:'ఉబ్బిన పొదుగు, చీము/రక్తంతో పాలు',cause:'స్టాఫిలోకాకస్, స్ట్రెప్టోకాకస్',prev:'పాల పిండిన తర్వాత పొదుగు శుభ్రత',resp:'వైద్యుని మార్గదర్శకత్వంలో యాంటీబయోటిక్.',sev:'high'},
+    {name:'పొట్ట ఉబ్బడం (Bloat)',sp:'పశువులు / మేక',cat:'Cattle',symptoms:'ఎడమ పొట్ట ఉబ్బడం, శ్వాసకోశ సమస్యలు',cause:'రూమెన్ గ్యాస్',prev:'తడి చిక్కుడు నివారించండి',resp:'పేగు గొట్టం. అత్యవసర వైద్యుడు.',sev:'high'},
+    {name:'పాల జ్వరం (Hypocalcaemia)',sp:'పశువులు',cat:'Cattle',symptoms:'కండరాల కంపనాలు, నిలబడలేకపోవడం',cause:'ఈనే సమయంలో కాల్షియం తగ్గుదల',prev:'కాల్షియం నియంత్రిత ఆహారం.',resp:'వైద్యుని ద్వారా IV కాల్షియం ఇంజెక్షన్. ప్రాణాంతకం.',sev:'critical'},
+    {name:'PPR – మేక ప్లేగు',sp:'మేక / గొర్రె',cat:'Goat',symptoms:'తీవ్ర జ్వరం, నోటి పుండ్లు, తీవ్రమైన అతిసారం',cause:'మోర్బిలివైరస్',prev:'వార్షిక PPR వ్యాక్సిన్.',resp:'వెంటనే వేరు చేయండి. అధికారులకు నివేదించండి.',sev:'critical'},
+    {name:'ఎంటెరోటాక్సీమియా',sp:'మేక',cat:'Goat',symptoms:'అకస్మాత్తు మరణం, మూర్చలు',cause:'క్లోస్ట్రిడియం విషం',prev:'6 నెలలకు వ్యాక్సిన్.',resp:'ముందు పట్టుకుంటే యాంటీటాక్సిన్.',sev:'critical'},
+    {name:'మేక పురుగు సోకు',sp:'మేక',cat:'Goat',symptoms:'బరువు తగ్గడం, తెల్లని చిగుళ్ళు',cause:'హీమోంకస్',prev:'నియమిత పురుగు మందు',resp:'బెంజిమిడాజోల్ లేదా లెవమిసోల్.',sev:'medium'},
+    {name:'బ్రూసెల్లోసిస్',sp:'పశువులు / మేక',cat:'Cattle',symptoms:'గర్భస్రావం, వంధ్యత్వం',cause:'బ్రూసెల్లా',prev:'4–8 నెలల ఆడ దూడలకు వ్యాక్సిన్.',resp:'చికిత్స లేదు — వధించండి. తప్పనిసరి నివేదన.',sev:'critical'},
+  ],
+  vaccines: {
+    broiler:[{day:'1వ రోజు',v:'మారెక్ వ్యాక్సిన్',route:'చర్మం కింద'},{day:'7వ రోజు',v:'ND + IB',route:'కంటి చుక్కలు'},{day:'14వ రోజు',v:'గుంబోరో',route:'నీటి ద్వారా'},{day:'21వ రోజు',v:'ND బూస్టర్',route:'నీరు / కళ్ళు'},{day:'28వ రోజు',v:'గుంబోరో బూస్టర్',route:'నీటి ద్వారా'}],
+    layer:[{day:'1వ రోజు',v:'మారెక్',route:'చర్మం కింద'},{day:'7వ రోజు',v:'ND + IB',route:'కంటి చుక్కలు'},{day:'14వ రోజు',v:'గుంబోరో',route:'నీటి ద్వారా'},{day:'21వ రోజు',v:'ND బూస్టర్',route:'కళ్ళు/నీరు'},{day:'6వ వారం',v:'కోడి పాక్స్',route:'రెక్క వెబ్'},{day:'8వ వారం',v:'AE',route:'నీటి ద్వారా'},{day:'10వ వారం',v:'ND+IB+EDS',route:'కండర ఇంజెక్షన్'},{day:'16వ వారం',v:'ప్రి-లేయర్ బూస్టర్',route:'కండర ఇంజెక్షన్'}],
+    cattle:[{day:'3 నెలల నుండి ప్రతి 6 నెలలకు',v:'FMD',route:'చర్మం కింద'},{day:'3 నెలల నుండి వార్షికంగా',v:'HS',route:'చర్మం కింద'},{day:'6 నెలల నుండి వార్షికంగా',v:'BQ',route:'చర్మం కింద'},{day:'4–8 నెలలకు (ఆడ)',v:'బ్రూసెల్లోసిస్',route:'చర్మం కింద'},{day:'వార్షికంగా',v:'నల్లి జ్వరం',route:'చర్మం కింద'}],
+    goat:[{day:'ప్రతి 6 నెలలకు',v:'PPR',route:'చర్మం కింద'},{day:'ప్రతి 6 నెలలకు',v:'FMD',route:'చర్మం కింద'},{day:'ప్రతి 6 నెలలకు',v:'ఎంటెరోటాక్సీమియా',route:'చర్మం కింద'},{day:'వార్షికంగా',v:'మేక పాక్స్',route:'కండర ఇంజెక్షన్'},{day:'వార్షికంగా (ఆడ)',v:'బ్రూసెల్లోసిస్',route:'చర్మం కింద'}],
+  },
+  calcStages: {
+    broiler:[{label:'ప్రి-స్టార్టర్ – రోజు 1–10',rate:20,unit:'g',cp:'21–23%',energy:'2850–2950 kcal/kg',lysine:'1.2%',meth:'0.55%'},{label:'స్టార్టర్ – రోజు 11–21',rate:50,unit:'g',cp:'20–21%',energy:'2950–3000 kcal/kg',lysine:'1.1%',meth:'0.50%'},{label:'గ్రోవర్ – రోజు 22–30',rate:100,unit:'g',cp:'18–19%',energy:'3000–3100 kcal/kg',lysine:'1.0%',meth:'0.45%'},{label:'ఫినిషర్ – రోజు 31+',rate:150,unit:'g',cp:'17–18%',energy:'3100–3200 kcal/kg',lysine:'0.9%',meth:'0.40%'}],
+    layer:[{label:'చిక్ ప్రి-స్టార్టర్ – 0–4 వారాలు',rate:25,unit:'g',cp:'20–21%',energy:'2850–2900 kcal/kg',lysine:'1.05%',meth:'0.45%'},{label:'చిక్ స్టార్టర్ – 5–8 వారాలు',rate:45,unit:'g',cp:'19–20%',energy:'2800–2900 kcal/kg',lysine:'1.00%',meth:'0.42%'},{label:'గ్రోవర్ 1 – 9–12 వారాలు',rate:65,unit:'g',cp:'17–18%',energy:'2700–2800 kcal/kg',lysine:'0.85%',meth:'0.38%'},{label:'గ్రోవర్ 2 – 13–16 వారాలు',rate:80,unit:'g',cp:'16–17%',energy:'2650–2750 kcal/kg',lysine:'0.80%',meth:'0.35%'},{label:'ప్రి-లేయర్ – 17–18 వారాలు',rate:90,unit:'g',cp:'16–17%',energy:'2700–2800 kcal/kg',lysine:'0.85%',meth:'0.38%'},{label:'లేయర్ 1 పీక్ – 19–32 వారాలు',rate:115,unit:'g',cp:'17–18%',energy:'2700–2800 kcal/kg',lysine:'0.82%',meth:'0.36%'},{label:'లేయర్ 2 మధ్య – 33–50 వారాలు',rate:115,unit:'g',cp:'16–17%',energy:'2700–2800 kcal/kg',lysine:'0.78%',meth:'0.34%'},{label:'లేయర్ 3 చివరి – 51+ వారాలు',rate:110,unit:'g',cp:'15–16%',energy:'2650–2750 kcal/kg',lysine:'0.72%',meth:'0.32%'}],
+    cattle:[{label:'దూడ స్టార్టర్ – 0–3 నెలలు',rate:1.5,unit:'kg',cp:'18–20%',energy:'అధిక శక్తి',lysine:'—',meth:'—'},{label:'గ్రోవర్ – 3–12 నెలలు',rate:4,unit:'kg',cp:'16–18%',energy:'2700–2900 kcal/kg',lysine:'—',meth:'—'},{label:'హేఫర్ – 12–24 నెలలు',rate:5.5,unit:'kg',cp:'14–16%',energy:'2500–2700 kcal/kg',lysine:'—',meth:'—'},{label:'పాలిచ్చే ఆవు',rate:8,unit:'kg',cp:'16–18%',energy:'2700–2900 + బైపాస్',lysine:'—',meth:'—'},{label:'పొడి ఆవు',rate:5,unit:'kg',cp:'నియంత్రిత',energy:'మధ్యస్థ శక్తి',lysine:'—',meth:'—'},{label:'మాంసం పశువులు',rate:7,unit:'kg',cp:'14–16%',energy:'అధిక శక్తి',lysine:'—',meth:'—'}],
+    goat:[{label:'మేక పిల్ల – 0–3 నెలలు',rate:0.3,unit:'kg',cp:'18–20%',energy:'అధిక ప్రోటీన్',lysine:'—',meth:'—'},{label:'గ్రోవర్ – 3–9 నెలలు',rate:0.6,unit:'kg',cp:'16–18%',energy:'2700–2900 kcal/kg',lysine:'—',meth:'—'},{label:'వయోజన – 9+ నెలలు',rate:0.8,unit:'kg',cp:'14–16%',energy:'2600–2750 kcal/kg',lysine:'—',meth:'—'},{label:'గర్భిణి మరియు పాలిచ్చే',rate:1.0,unit:'kg',cp:'16–18%',energy:'అధిక శక్తి + Ca/P',lysine:'—',meth:'—'},{label:'మాంసం మేక',rate:1.2,unit:'kg',cp:'శక్తి-సమృద్ధ',energy:'అధిక ధాన్యం',lysine:'—',meth:'—'}],
+  },
+}, // end te
+
+// ── TAMIL ────────────────────────────────────────────────────
+ta: {
+  tips: ['புரோலர் குஞ்சுகளுக்கு முதல் மணியில் தண்ணீர் முதலில் கொடுங்கள்.','லேயர் கோழிகளுக்கு 16+ மணி வெளிச்சம் தேவை.','புதிய மற்றும் பழைய தீவனத்தை கலைக்காதீர்கள்.','FCR இல் 1% மேம்பாடு ₹2,000–3,000 சேமிக்கும்.','கால்நடைகளுக்கு உடல் எடையில் 10% உலர் பொருள் தேவை.','முதல் 6 மணியில் கொலோஸ்ட்ரம் பெற்ற குட்டிகள் 40% குறைந்த இறப்பு.','35°C க்கு மேல் வெப்பம் புரோலர் 15–20% குறைவான வளர்ச்சி.','1.8–2% கால்சியம் முட்டை ஓட்டுக்கு முக்கியம்.','கோடையில் 4 மணிக்கு குளிர் நீர் நிரப்பவும்.','தினமும் தீவன உட்கொள்ளல் பதிவிடவும். திடீர் குறைவு நோயின் முதல் அறிகுறி.'],
+  disCats: ['அனைத்தும்','கோழி','கால்நடை','ஆடு'],
+  disCatLabels: {All:'அனைத்தும்',Poultry:'கோழி',Cattle:'கால்நடை',Goat:'ஆடு'},
+  vacTabs: ['🐓 புரோலர்','🥚 லேயர்','🐄 கால்நடை','🐐 ஆடு'],
+  vacNote: '✅ முடிந்ததை குறிக்க வட்டத்தை தட்டவும். 🔔 நினைவூட்டல் அமைக்க தட்டவும்.',
+  vacReminderBtn: '🔔 நினைவூட்டல் அமைக்கவும்',
+  calcLabels: {title:'🧮 தீவன கணக்கீடு',animalType:'விலங்கு வகை',feedingStage:'தீவன நிலை',numAnimals:'விலங்குகளின் எண்ணிக்கை',feedPrice:'தீவன விலை (₹/kg)',bodyWeight:'சராசரி உடல் எடை (kg)',calcBtn:'தீவன தேவை கணக்கிடுங்கள்',dailyFeed:'தினசரி தீவன தேவை',recentCalcs:'சமீபத்திய கணக்கீடுகள்',animalOpts:['🐓 புரோலர் கோழி','🥚 லேயர் கோழி','🐄 கால்நடை / பசு','🐐 ஆடு']},
+  profitLabels: {title:'📈 லாப மதிப்பீடு',farmType:'பண்ணை வகை',numAnimals:'விலங்குகளின் எண்ணிக்கை',prodDays:'உற்பத்தி நாட்கள்',mortality:'எதிர்பார்க்கப்படும் இறப்பு %',medicine:'மருந்து மற்றும் கூலி (₹)',calcBtn:'லாபம் மற்றும் பிரேக்-ஈவன் மதிப்பிடுங்கள்',netProfit:'மதிப்பிடப்பட்ட நிகர லாபம்',breakeven:'பிரேக்-ஈவன் விலை',margin:'வரம்பு',roi:'ROI',recentEst:'சமீபத்திய மதிப்பீடுகள்',farmOpts:['🐓 புரோலர் (இறைச்சி)','🥚 லேயர் (முட்டை)','🐄 பால் கால்நடை','🐐 ஆடு (இறைச்சி)']},
+  trackerLabels: {addBtn:'+ பதிவு சேர்க்கவும்',searchPh:'பதிவுகளை தேடுங்கள்...',cats:['அனைத்தும்','தீவனம்','உடல்நலம்','விற்பனை','செலவுகள்','இறப்பு','எடை','முட்டை','பால்','குறிப்புகள்'],noRecords:'இன்னும் பதிவுகள் இல்லை. + தட்டி சேர்க்கவும்.'},
+  modalTitles: {disease:'🩺 நோய் வழிகாட்டி',vaccine:'💉 தடுப்பூசி திட்டமிடுபவர்',catalog:'📦 SR FEEDS தயாரிப்பு பட்டியல்',calc:'🧮 தீவன கணக்கீடு',profit:'📈 லாப மதிப்பீடு',wizard:'✨ ஸ்மார்ட் ஃபீட் விஸார்டு',dealer:'📍 டீலர் கண்டுபிடிப்பு',export:'📤 பண்ணை தரவு ஏற்றுமதி',notif:'🔔 அறிவிப்பு மையம்',search:'🔍 உலகளாவிய தேடல்'},
+  wizSteps: [
+    {title:'நீங்கள் என்ன விலங்கை வளர்க்கிறீர்கள்?',sub:'உங்கள் கால்நடை வகை தேர்ந்தெடுக்கவும்.',key:'species',opts:[{ic:'🐓',lbl:'புரோலர்',val:'broiler'},{ic:'🥚',lbl:'லேயர்',val:'layer'},{ic:'🐄',lbl:'கால்நடை',val:'cattle'},{ic:'🐐',lbl:'ஆடு',val:'goat'}]},
+    {title:'அவற்றின் வயது/நிலை?',sub:'தற்போதைய வாழ்க்கை நிலை தேர்ந்தெடுக்கவும்.',key:'age',opts:[{ic:'🐣',lbl:'சிறியவை (0–3 வாரங்கள்)',val:'young'},{ic:'🐦',lbl:'வளரும் (3–8 வாரங்கள்)',val:'growing'},{ic:'🐔',lbl:'வயதுவந்த',val:'adult'},{ic:'🏆',lbl:'சந்தை தயார்',val:'market'}]},
+    {title:'உங்கள் முக்கிய இலக்கு?',sub:'இப்போது எது முக்கியம்?',key:'goal',opts:[{ic:'📈',lbl:'அதிகபட்ச வளர்ச்சி',val:'growth'},{ic:'🥚',lbl:'அதிக முட்டைகள்',val:'egg'},{ic:'🥛',lbl:'பால் உற்பத்தி',val:'milk'},{ic:'💰',lbl:'சிறந்த லாபம்',val:'profit'}]},
+    {title:'உங்கள் தீவன பட்ஜெட்?',sub:'kg க்கு செலவிட தயார்.',key:'budget',opts:[{ic:'💵',lbl:'சிக்கனம் (<₹25)',val:'economy'},{ic:'💰',lbl:'சாதாரண (₹25–35)',val:'standard'},{ic:'💎',lbl:'பிரீமியம் (₹35+)',val:'premium'},{ic:'🤔',lbl:'தெரியாது',val:'any'}]},
+  ],
+  diseases: [
+    {name:'நிவுகேசில் நோய் (ND)',sp:'கோழி',cat:'Poultry',symptoms:'கழுத்து சுழலுதல், மூச்சிரைத்தல், பச்சை வயிற்றுப்போக்கு, திடீர் இறப்பு',cause:'பாரமிக்ஸோவைரஸ்',prev:'7ஆம் நாள் கண் சொட்டு, 21ஆம் நாள் பூஸ்டர், 42ஆம் நாள் ஊசி.',resp:'உடனே தனிமைப்படுத்தவும். கால்நடை மருத்துவரை தொடர்புகொள்ளவும்.',sev:'critical'},
+    {name:'ராணிகேத் நோய்',sp:'கோழி',cat:'Poultry',symptoms:'சுவாச சிரமம், நரம்பு நடுக்கம், பச்சை வயிற்றுப்போக்கு',cause:'NDV வைரஸ்',prev:'வழக்கமான ND தடுப்பூசி',resp:'குறிப்பிட்ட சிகிச்சை இல்லை. வைட்டமின்கள்.',sev:'critical'},
+    {name:'மாரெக் நோய்',sp:'கோழி',cat:'Poultry',symptoms:'கால்/சிறகு பக்கவாதம், கட்டிகள்',cause:'ஹெர்பீஸ்வைரஸ்',prev:'1ஆம் நாள் பொரிப்பகத்தில் மட்டும்.',resp:'பாதிக்கப்பட்ட பறவைகளை வதைக்கவும்.',sev:'high'},
+    {name:'காக்சிடியோசிஸ்',sp:'கோழி',cat:'Poultry',symptoms:'இரத்த வயிற்றுப்போக்கு, குறைவான வளர்ச்சி',cause:'ஐமேரியா',prev:'ஸ்டார்டர் தீவனத்தில் காக்சிடியோஸ்டாட்',resp:'ஆம்ப்ரோலியம் 3–5 நாட்கள்.',sev:'medium'},
+    {name:'கும்போரோ (IBD)',sp:'கோழி',cat:'Poultry',symptoms:'நீர் வயிற்றுப்போக்கு, நீரிழப்பு',cause:'பிர்னாவைரஸ்',prev:'14ஆம் மற்றும் 28ஆம் நாள் தடுப்பூசி.',resp:'எலக்ட்ரோலைட்கள், வைட்டமின்கள்.',sev:'high'},
+    {name:'CRD – நாட்பட்ட சுவாச நோய்',sp:'கோழி',cat:'Poultry',symptoms:'மூக்கு சுரப்பு, சுவாச சத்தம்',cause:'மைக்கோபிளாஸ்மா',prev:'MG இல்லாத இனம், உயிரியல் பாதுகாப்பு',resp:'டைலோசின் அல்லது என்ரோஃப்ளாக்சாசின்.',sev:'medium'},
+    {name:'கோழி அம்மை (Fowl Pox)',sp:'கோழி',cat:'Poultry',symptoms:'தலையில் மச்சம் போன்ற சொரி, வாயில் வெள்ளை புள்ளிகள்',cause:'அவிபாக்ஸ்வைரஸ் – கொசுக்களால்',prev:'6–8 வாரங்கள் சிறகு வலை தடுப்பூசி.',resp:'நிர்ணயிக்கப்பட்ட சிகிச்சை இல்லை. தனிமைப்படுத்தவும்.',sev:'medium'},
+    {name:'கால்-வாய் நோய் (FMD)',sp:'கால்நடை / ஆடு',cat:'Cattle',symptoms:'நாக்கு, கால்களில் கொப்புளங்கள், அதிக உமிழ்நீர்',cause:'FMD அஃப்தோவைரஸ்',prev:'ஒவ்வொரு 6 மாதமும் FMD தடுப்பூசி.',resp:'உடனே தனிமைப்படுத்தவும். கிருமிநாசினி செய்யவும். அதிகாரிகளுக்கு தெரிவிக்கவும்.',sev:'critical'},
+    {name:'மடி அழற்சி (Mastitis)',sp:'கால்நடை',cat:'Cattle',symptoms:'சூடான, வீங்கிய மடி, சீழ்/இரத்த பால்',cause:'ஸ்டாஃபிலோகாக்கஸ்',prev:'பால் கறந்த பிறகு மடி சுகாதாரம்',resp:'மருத்துவர் வழிகாட்டுதலில் யாண்டிபயோட்டிக்.',sev:'high'},
+    {name:'வயிறு வீக்கம் (Bloat)',sp:'கால்நடை / ஆடு',cat:'Cattle',symptoms:'இடது வயிறு வீக்கம், சுவாச சிரமம்',cause:'ரூமனில் வாயு',prev:'ஈரமான பருப்பு மேய்ச்சல் தவிர்க்கவும்',resp:'வயிற்று குழாய். அவசர மருத்துவர்.',sev:'high'},
+    {name:'பால் காய்ச்சல் (Hypocalcaemia)',sp:'கால்நடை',cat:'Cattle',symptoms:'தசை நடுக்கம், எழுந்து நிற்க முடியாமல்',cause:'ஈனும் போது கால்சியம் குறைவு',prev:'ஈனும் முன் கால்சியம் கட்டுப்பட்ட உணவு.',resp:'உடனே IV கால்சியம் ஊசி. உயிருக்கு ஆபத்தான.',sev:'critical'},
+    {name:'PPR – ஆட்டு கொள்ளை',sp:'ஆடு / செம்மறி',cat:'Goat',symptoms:'அதிக காய்ச்சல், வாய் புண்கள், கடுமையான வயிற்றுப்போக்கு',cause:'மோர்பில்லிவைரஸ்',prev:'வருடாந்திர PPR தடுப்பூசி.',resp:'உடனே தனிமைப்படுத்தவும். அதிகாரிகளுக்கு தெரிவிக்கவும்.',sev:'critical'},
+    {name:'எண்டரோடாக்சீமியா (ஆடு)',sp:'ஆடு',cat:'Goat',symptoms:'திடீர் மரணம், வலிப்பு, வீக்கம்',cause:'க்ளோஸ்ட்ரிடியம் நச்சு',prev:'ஒவ்வொரு 6 மாதமும் தடுப்பூசி.',resp:'முன்கூட்டியே கண்டுபிடித்தால் ஆன்டிடாக்சின்.',sev:'critical'},
+    {name:'ஆட்டு புழு நோய்',sp:'ஆடு',cat:'Goat',symptoms:'எடை குறைவு, வெளிர் ஈறுகள்',cause:'ஹீமான்கஸ்',prev:'வழக்கமான புழு மருந்து',resp:'பென்சிமிடசோல் அல்லது லெவமிசோல்.',sev:'medium'},
+    {name:'புரூசெல்லோசிஸ்',sp:'கால்நடை / ஆடு',cat:'Cattle',symptoms:'கலைப்பு, மலட்டுத்தன்மை',cause:'புரூசெல்லா',prev:'4–8 மாத ஆண்டலை பெண்ணுக்கு தடுப்பூசி.',resp:'சிகிச்சை இல்லை — வதைக்கவும். கட்டாய அறிக்கை.',sev:'critical'},
+  ],
+  vaccines: {
+    broiler:[{day:'1ஆம் நாள்',v:'மாரெக் தடுப்பூசி',route:'தோலுக்கடியில்'},{day:'7ஆம் நாள்',v:'ND + IB',route:'கண் சொட்டு அல்லது தண்ணீர்'},{day:'14ஆம் நாள்',v:'கும்போரோ',route:'தண்ணீர்'},{day:'21ஆம் நாள்',v:'ND பூஸ்டர்',route:'தண்ணீர் / கண் சொட்டு'},{day:'28ஆம் நாள்',v:'கும்போரோ பூஸ்டர்',route:'தண்ணீர்'}],
+    layer:[{day:'1ஆம் நாள்',v:'மாரெக்',route:'தோலுக்கடியில்'},{day:'7ஆம் நாள்',v:'ND + IB',route:'கண் சொட்டு'},{day:'14ஆம் நாள்',v:'கும்போரோ',route:'தண்ணீர்'},{day:'21ஆம் நாள்',v:'ND பூஸ்டர்',route:'கண் / தண்ணீர்'},{day:'6ஆம் வாரம்',v:'கோழி அம்மை',route:'சிறகு வலை'},{day:'8ஆம் வாரம்',v:'AE',route:'தண்ணீர்'},{day:'10ஆம் வாரம்',v:'ND+IB+EDS',route:'தசை ஊசி'},{day:'16ஆம் வாரம்',v:'பிரி-லேயர் பூஸ்டர்',route:'தசை ஊசி'}],
+    cattle:[{day:'3 மாதத்திலிருந்து ஒவ்வொரு 6 மாதமும்',v:'FMD',route:'தோலுக்கடியில்'},{day:'3 மாதத்திலிருந்து வருடாந்திரம்',v:'HS',route:'தோலுக்கடியில்'},{day:'6 மாதத்திலிருந்து வருடாந்திரம்',v:'BQ',route:'தோலுக்கடியில்'},{day:'4–8 மாதம் (பெண்)',v:'புரூசெல்லோசிஸ்',route:'தோலுக்கடியில்'},{day:'வருடாந்திரம்',v:'உண்ணி காய்ச்சல்',route:'தோலுக்கடியில்'}],
+    goat:[{day:'ஒவ்வொரு 6 மாதமும்',v:'PPR',route:'தோலுக்கடியில்'},{day:'ஒவ்வொரு 6 மாதமும்',v:'FMD',route:'தோலுக்கடியில்'},{day:'ஒவ்வொரு 6 மாதமும்',v:'எண்டரோடாக்சீமியா',route:'தோலுக்கடியில்'},{day:'வருடாந்திரம்',v:'ஆட்டு அம்மை',route:'தசை ஊசி'},{day:'வருடாந்திரம் (பெண்)',v:'புரூசெல்லோசிஸ்',route:'தோலுக்கடியில்'}],
+  },
+  calcStages: {
+    broiler:[{label:'பிரி-ஸ்டார்டர் – நாள் 1–10',rate:20,unit:'g',cp:'21–23%',energy:'2850–2950 kcal/kg',lysine:'1.2%',meth:'0.55%'},{label:'ஸ்டார்டர் – நாள் 11–21',rate:50,unit:'g',cp:'20–21%',energy:'2950–3000 kcal/kg',lysine:'1.1%',meth:'0.50%'},{label:'க்ரோவர் – நாள் 22–30',rate:100,unit:'g',cp:'18–19%',energy:'3000–3100 kcal/kg',lysine:'1.0%',meth:'0.45%'},{label:'ஃபினிஷர் – நாள் 31+',rate:150,unit:'g',cp:'17–18%',energy:'3100–3200 kcal/kg',lysine:'0.9%',meth:'0.40%'}],
+    layer:[{label:'சிக் பிரி-ஸ்டார்டர் – 0–4 வாரங்கள்',rate:25,unit:'g',cp:'20–21%',energy:'2850–2900 kcal/kg',lysine:'1.05%',meth:'0.45%'},{label:'சிக் ஸ்டார்டர் – 5–8 வாரங்கள்',rate:45,unit:'g',cp:'19–20%',energy:'2800–2900 kcal/kg',lysine:'1.00%',meth:'0.42%'},{label:'க்ரோவர் 1 – 9–12 வாரங்கள்',rate:65,unit:'g',cp:'17–18%',energy:'2700–2800 kcal/kg',lysine:'0.85%',meth:'0.38%'},{label:'க்ரோவர் 2 – 13–16 வாரங்கள்',rate:80,unit:'g',cp:'16–17%',energy:'2650–2750 kcal/kg',lysine:'0.80%',meth:'0.35%'},{label:'பிரி-லேயர் – 17–18 வாரங்கள்',rate:90,unit:'g',cp:'16–17%',energy:'2700–2800 kcal/kg',lysine:'0.85%',meth:'0.38%'},{label:'லேயர் 1 பீக் – 19–32 வாரங்கள்',rate:115,unit:'g',cp:'17–18%',energy:'2700–2800 kcal/kg',lysine:'0.82%',meth:'0.36%'},{label:'லேயர் 2 நடு – 33–50 வாரங்கள்',rate:115,unit:'g',cp:'16–17%',energy:'2700–2800 kcal/kg',lysine:'0.78%',meth:'0.34%'},{label:'லேயர் 3 இறுதி – 51+ வாரங்கள்',rate:110,unit:'g',cp:'15–16%',energy:'2650–2750 kcal/kg',lysine:'0.72%',meth:'0.32%'}],
+    cattle:[{label:'கன்று ஸ்டார்டர் – 0–3 மாதங்கள்',rate:1.5,unit:'kg',cp:'18–20%',energy:'அதிக ஆற்றல்',lysine:'—',meth:'—'},{label:'க்ரோவர் – 3–12 மாதங்கள்',rate:4,unit:'kg',cp:'16–18%',energy:'2700–2900 kcal/kg',lysine:'—',meth:'—'},{label:'ஹேஃபர் – 12–24 மாதங்கள்',rate:5.5,unit:'kg',cp:'14–16%',energy:'2500–2700 kcal/kg',lysine:'—',meth:'—'},{label:'பால் தரும் பசு',rate:8,unit:'kg',cp:'16–18%',energy:'2700–2900 + பைபாஸ்',lysine:'—',meth:'—'},{label:'உலர்ந்த பசு',rate:5,unit:'kg',cp:'கட்டுப்படுத்தப்பட்டது',energy:'மிதமான ஆற்றல்',lysine:'—',meth:'—'},{label:'இறைச்சி கால்நடை',rate:7,unit:'kg',cp:'14–16%',energy:'அதிக ஆற்றல்',lysine:'—',meth:'—'}],
+    goat:[{label:'குட்டி ஸ்டார்டர் – 0–3 மாதங்கள்',rate:0.3,unit:'kg',cp:'18–20%',energy:'அதிக புரதம்',lysine:'—',meth:'—'},{label:'க்ரோவர் – 3–9 மாதங்கள்',rate:0.6,unit:'kg',cp:'16–18%',energy:'2700–2900 kcal/kg',lysine:'—',meth:'—'},{label:'வயதுவந்த – 9+ மாதங்கள்',rate:0.8,unit:'kg',cp:'14–16%',energy:'2600–2750 kcal/kg',lysine:'—',meth:'—'},{label:'கர்ப்பிணி மற்றும் பால்',rate:1.0,unit:'kg',cp:'16–18%',energy:'அதிக ஆற்றல் + Ca/P',lysine:'—',meth:'—'},{label:'இறைச்சி ஆடு',rate:1.2,unit:'kg',cp:'ஆற்றல் நிறைந்த',energy:'அதிக தானியம்',lysine:'—',meth:'—'}],
+  },
+}, // end ta
+
+}; // end CONTENT_I18N
+
+// ─────────────────────────────────────────────────────────────
+// applyFullI18n(lang) — master content translation engine
+// Wires CONTENT_I18N data into all app render functions
+// ─────────────────────────────────────────────────────────────
+function applyFullI18n(lang) {
+  const C = CONTENT_I18N[lang] || CONTENT_I18N.en;
+  const L = (typeof I18N !== 'undefined' ? I18N[lang] : null) || {};
+
+  // 1. Daily Tips ─────────────────────────────────────────────
+  if (C.tips && C.tips.length) {
+    if (typeof TIPS !== 'undefined') TIPS.splice(0, TIPS.length, ...C.tips);
+    const tipEl = document.getElementById('daily-tip');
+    if (tipEl) tipEl.textContent = C.tips[Math.floor(Math.random() * C.tips.length)];
+  }
+
+  // 2. Disease Guide ───────────────────────────────────────────
+  if (C.diseases && C.diseases.length) {
+    if (typeof DISEASES !== 'undefined') DISEASES.splice(0, DISEASES.length, ...C.diseases);
+    // Category filter tabs
+    if (C.disCats) {
+      const catRow = document.getElementById('dis-cat-row');
+      if (catRow) {
+        const engCats = ['All','Poultry','Cattle','Goat'];
+        catRow.innerHTML = C.disCats.map((c, i) => {
+          const engCat = engCats[i] || c;
+          const active = (typeof curDisCat !== 'undefined' && (curDisCat === engCat || curDisCat === c)) || i === 0;
+          return `<button class="dis-cat-btn${active ? ' active' : ''}" onclick="setDisCat('${engCat}',this)">${c}</button>`;
+        }).join('');
+      }
+    }
+    // Re-render disease list
+    if (typeof filterDiseases === 'function') filterDiseases(document.getElementById('dis-search')?.value || '');
+    else if (typeof renderDiseases === 'function') renderDiseases(typeof DISEASES !== 'undefined' ? DISEASES : []);
+  }
+
+  // 3. Vaccination Planner ─────────────────────────────────────
+  if (C.vaccines) {
+    if (typeof VACCINES !== 'undefined') {
+      Object.keys(C.vaccines).forEach(sp => {
+        if (VACCINES[sp]) {
+          C.vaccines[sp].forEach((v, i) => {
+            if (VACCINES[sp][i]) { VACCINES[sp][i].day = v.day; VACCINES[sp][i].v = v.v; VACCINES[sp][i].route = v.route; }
+          });
+        }
+      });
+    }
+    // Vaccine tab labels
+    if (C.vacTabs) {
+      document.querySelectorAll('#vac-tabs .tab, [id="vac-tabs"] button').forEach((tab, i) => {
+        if (C.vacTabs[i]) tab.textContent = C.vacTabs[i];
+      });
+    }
+    // Re-render current vaccine tab
+    if (typeof renderVac === 'function' && typeof curVacSp !== 'undefined') renderVac(curVacSp);
+  }
+
+  // 4. Feed Calculator Stages ──────────────────────────────────
+  if (C.calcStages && typeof CALC_STAGES !== 'undefined') {
+    Object.keys(C.calcStages).forEach(sp => {
+      if (CALC_STAGES[sp]) C.calcStages[sp].forEach((s, i) => { if (CALC_STAGES[sp][i]) CALC_STAGES[sp][i].label = s.label; });
+    });
+    if (C.calcLabels?.animalOpts) {
+      const sel = document.getElementById('c-species');
+      if (sel) Array.from(sel.options).forEach((o, i) => { if (C.calcLabels.animalOpts[i]) o.textContent = C.calcLabels.animalOpts[i]; });
+    }
+    if (typeof updateCalcStages === 'function') updateCalcStages();
+    // Calculator labels
+    if (C.calcLabels) {
+      const qs = (s, t) => { const e = document.querySelector(s); if (e && t) e.textContent = t; };
+      qs('#calc-modal .sheet-title', C.calcLabels.title);
+      const calcBtn = document.querySelector('#calc-modal .fcalc-btn, #calc-modal button[onclick*="calcFeed"]');
+      if (calcBtn && C.calcLabels.calcBtn) calcBtn.textContent = C.calcLabels.calcBtn;
+    }
+  }
+
+  // 5. Profit Estimator ────────────────────────────────────────
+  if (C.profitLabels?.farmOpts) {
+    const pSel = document.getElementById('p-type');
+    if (pSel) Array.from(pSel.options).forEach((o, i) => { if (C.profitLabels.farmOpts[i]) o.textContent = C.profitLabels.farmOpts[i]; });
+    const qs = (s, t) => { const e = document.querySelector(s); if (e && t) e.textContent = t; };
+    qs('#profit-modal .sheet-title', C.profitLabels.title);
+    const profBtn = document.querySelector('#profit-modal .fcalc-btn, #profit-modal button[onclick*="calcProfit"]');
+    if (profBtn && C.profitLabels.calcBtn) profBtn.textContent = C.profitLabels.calcBtn;
+  }
+
+  // 6. Smart Feed Wizard ───────────────────────────────────────
+  if (C.wizSteps && typeof WIZ_STEPS !== 'undefined') {
+    WIZ_STEPS.splice(0, WIZ_STEPS.length, ...C.wizSteps);
+    // Re-render if wizard modal is open
+    if (typeof wizStep !== 'undefined' && typeof renderWizStep === 'function') {
+      const wc = document.getElementById('wiz-content');
+      if (wc && wc.innerHTML.trim()) { try { wc.innerHTML = renderWizStep(); } catch(e){} }
+    }
+  }
+
+  // 7. Tracker Labels ──────────────────────────────────────────
+  if (C.trackerLabels) {
+    const tL = C.trackerLabels;
+    // Add record button
+    ['#scr-tracker .add-rec-btn','#scr-tracker button[onclick*="openAddRecord"]','#scr-tracker button[onclick*="Export"]'].forEach(sel => {
+      const el = document.querySelector(sel);
+      if (el && tL.addBtn && !el.textContent.includes('Export')) el.textContent = tL.addBtn;
+    });
+    const srch = document.getElementById('tr-search');
+    if (srch && tL.searchPh) srch.placeholder = tL.searchPh;
+    // Category tabs
+    if (tL.cats) {
+      const tabEls = document.querySelectorAll('#tracker-cat-tabs .tab');
+      tabEls.forEach((tab, i) => { if (tL.cats[i]) tab.textContent = tL.cats[i]; });
+    }
+    // Empty state message
+    const emptyEl = document.querySelector('#tracker-list .empty-state, #tracker-list > div[style*="text-align"]');
+    if (emptyEl && tL.noRecords && emptyEl.textContent.length < 80) emptyEl.textContent = tL.noRecords;
+  }
+
+  // 8. Modal Titles ────────────────────────────────────────────
+  if (C.modalTitles) {
+    const mT = C.modalTitles;
+    const map = {
+      disease:'#disease-modal .sheet-title', vaccine:'#vaccine-modal .sheet-title',
+      catalog:'#catalog-modal .sheet-title', calc:'#calc-modal .sheet-title',
+      profit:'#profit-modal .sheet-title',   wizard:'#wizard-modal .sheet-title',
+      dealer:'#dealer-modal .sheet-title',   export:'#export-sheet .sheet-title',
+      notif:'#notif-modal .sheet-title',     search:'#search-modal .sheet-title',
+    };
+    Object.entries(map).forEach(([k, sel]) => {
+      if (mT[k]) { const el = document.querySelector(sel); if (el) el.textContent = mT[k]; }
+    });
+  }
+
+  // 9. Bottom nav & greeting (from existing I18N) ──────────────
+  const navLabels = document.querySelectorAll('.bn-label');
+  const navKeys = ['nav_home','nav_learn','nav_tools','nav_tracker','nav_profile'];
+  navLabels.forEach((el, i) => { if (navKeys[i] && L[navKeys[i]]) el.textContent = L[navKeys[i]]; });
+  const ud = (typeof LS !== 'undefined') ? LS.get('srf_user') : null;
+  if (ud) {
+    const hg = document.getElementById('home-greeting');
+    if (hg) hg.textContent = (L.greeting || 'Hello') + ', ' + ud.name.split(' ')[0] + ' 👋';
+  }
+
+  document.documentElement.lang = lang;
+}
+
+// ── Patch setAppLang to call applyFullI18n ───────────────────
+(function() {
+  const _orig = (typeof setAppLang !== 'undefined') ? setAppLang : null;
+  setAppLang = function(lang) {
+    if (_orig) _orig(lang);
+    else {
+      // Minimal fallback if original not found
+      if (typeof curLang !== 'undefined') curLang = lang;
+      if (typeof LS !== 'undefined') LS.set('srf_lang', lang);
+    }
+    setTimeout(() => applyFullI18n(lang), 100);
+  };
+})();
+
+// ── Patch startApp to call applyFullI18n after init ──────────
+(function() {
+  const _origSA = (typeof startApp !== 'undefined') ? startApp : null;
+  if (_origSA) {
+    startApp = function() {
+      _origSA();
+      const lang = (typeof LS !== 'undefined') ? LS.get('srf_lang','en') : 'en';
+      setTimeout(() => applyFullI18n(lang), 200);
+    };
+  }
+})();
+
+// ── On page load, apply for returning users ──────────────────
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    const lang = (typeof LS !== 'undefined') ? LS.get('srf_lang','en') : 'en';
+    if (lang !== 'en') applyFullI18n(lang);
+  }, 400);
+});
+
+console.log('✅ SR FEEDS v4.4 — CONTENT_I18N engine ready. 5 langs × diseases+vaccines+calc+wizard+tracker+modals');
 
 </script>
 </body>
